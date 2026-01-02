@@ -3,6 +3,11 @@ venv/
 .pylintrc
 __pycache__
 
+
+parsed_data
+events.csv
+events.json
+
 .vscode
 .idea
 
