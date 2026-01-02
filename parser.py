@@ -2,6 +2,9 @@ import json
 import requests
 from bs4 import BeautifulSoup
 from urllib.parse import urljoin
+import re
+from datetime import datetime
+
 
 def parse_events(url):
     """
@@ -67,10 +70,52 @@ def parse_events(url):
         print(f"Ошибка при парсинге: {e}")
         return []
 
+
+def extract_datetime_from_title(title):
+    """Извлекает дату и время из строки title"""
+    # Ищем паттерн "день месяц время" в строке title
+    pattern = r'(\d{1,2}\s+[а-яё]+)\s+(\d{1,2}:\d{2})'
+    match = re.search(pattern, title.lower())
+    
+    if match:
+        date_str, time_str = match.groups()
+        
+        # Словарь для преобразования русских названий месяцев
+        months = {
+            'января': 1, 'февраля': 2, 'марта': 3, 'апреля': 4,
+            'мая': 5, 'июня': 6, 'июля': 7, 'августа': 8,
+            'сентября': 9, 'октября': 10, 'ноября': 11, 'декабря': 12
+        }
+        
+        # Парсим день и месяц
+        day = int(date_str.split()[0])
+        month_name = date_str.split()[1]
+        month = months.get(month_name.lower())
+        
+        if month:
+            # Создаем объект datetime (год берем текущий)
+            current_year = datetime.now().year
+            time_obj = datetime.strptime(time_str, '%H:%M')
+            
+            return datetime(current_year, month, day, 
+                           time_obj.hour, time_obj.minute)
+    
+    # Если не удалось распарсить, возвращаем дату далекого прошлого
+    return datetime.min
+
+
 def save_to_json(events, filename='events.json'):
-    """Сохраняет результаты в JSON файл"""
+    """Сохраняет результаты в JSON файл, отсортированные по дате и времени"""
+    
+    # Сортируем события по дате и времени из title
+    sorted_events = sorted(
+        events, 
+        key=lambda x: extract_datetime_from_title(x.get('title', ''))
+    )
+    
     with open(filename, 'w', encoding='utf-8') as f:
-        json.dump(events, f, ensure_ascii=False, indent=2)
+        json.dump(sorted_events, f, ensure_ascii=False, indent=2)
+
 
 def save_to_csv(events, filename='events.csv'):
     """Сохраняет результаты в CSV файл"""
