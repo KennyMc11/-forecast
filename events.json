@@ -1,21 +1,5 @@
 [
   {
-    "match_name": "Жил Висенте - Спортинг",
-    "title": "Прогнозы на матч Жил Висенте - Спортинг 02 января 21:45",
-    "url": "https://kushvsporte.ru/event/6347616-zhil-visente-sporting",
-    "relative_url": "/event/6347616-zhil-visente-sporting",
-    "team1": "Жил Висенте",
-    "team2": "Спортинг"
-  },
-  {
-    "match_name": "Жил Висенте - Спортинг",
-    "title": "Прогнозы на матч Жил Висенте - Спортинг 02 января 21:45",
-    "url": "https://kushvsporte.ru/event/6347616-zhil-visente-sporting",
-    "relative_url": "/event/6347616-zhil-visente-sporting",
-    "team1": "Жил Висенте",
-    "team2": "Спортинг"
-  },
-  {
     "match_name": "Эйбар - Мирандес",
     "title": "Прогнозы на матч Эйбар - Мирандес 02 января 22:30",
     "url": "https://kushvsporte.ru/event/6347617-eybar-mirandes",
@@ -88,11 +72,27 @@
     "team2": "Насьонал Мадейра"
   },
   {
+    "match_name": "Витория Гимарайнш - Насьонал Мадейра",
+    "title": "Прогнозы на матч Витория Гимарайнш - Насьонал Мадейра 02 января 23:45",
+    "url": "https://kushvsporte.ru/event/6347811-vitoriya-gimaraynsh-nasonal-madeyra",
+    "relative_url": "/event/6347811-vitoriya-gimaraynsh-nasonal-madeyra",
+    "team1": "Витория Гимарайнш",
+    "team2": "Насьонал Мадейра"
+  },
+  {
     "match_name": "Флорида Пантерс - Нью-Йорк Рейнджерс",
     "title": "Прогнозы на матч Флорида Пантерс - Нью-Йорк Рейнджерс 03 января 04:00",
     "url": "https://kushvsporte.ru/event/6348064-florida-panters-nyu-york-reyndzhers",
     "relative_url": "/event/6348064-florida-panters-nyu-york-reyndzhers",
     "team1": "Флорида Пантерс",
     "team2": "Нью-Йорк Рейнджерс"
+  },
+  {
+    "match_name": "Ванкувер Кэнакс - Сиэтл Кракен",
+    "title": "Прогнозы на матч Ванкувер Кэнакс - Сиэтл Кракен 03 января 06:30",
+    "url": "https://kushvsporte.ru/event/6348096-vankuver-kenaks-sietl-kraken",
+    "relative_url": "/event/6348096-vankuver-kenaks-sietl-kraken",
+    "team1": "Ванкувер Кэнакс",
+    "team2": "Сиэтл Кракен"
   }
 ]

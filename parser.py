@@ -125,7 +125,12 @@ def save_to_csv(events, filename='events.csv'):
         writer = csv.writer(f)
         writer.writerow(['Номер', 'Название события', 'Полная ссылка', 'Относительная ссылка'])
         
-        for i, event in enumerate(events, 1):
+        sorted_events = sorted(
+            events, 
+            key=lambda x: extract_datetime_from_title(x.get('title', ''))
+        )
+
+        for i, event in enumerate(sorted_events, 1):
             writer.writerow([i, event['title'], event['url'], event['relative_url']])
 
 def main():
