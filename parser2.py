@@ -134,6 +134,10 @@ class SportsParser:
             
             data = self.parse_page(url)
             if data:
+                if not data.get('full_text'):
+                    print(f"  ✗ Пропущено: отсутствует full_text")
+                    continue
+                
                 results.append(data)
                 
                 filename = f"result_{i+1}.json"

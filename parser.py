@@ -4,6 +4,8 @@ from bs4 import BeautifulSoup
 from urllib.parse import urljoin
 import re
 from datetime import datetime
+from zoneinfo import ZoneInfo
+import csv
 
 
 def parse_events(url):
@@ -25,6 +27,7 @@ def parse_events(url):
         sides_blocks = soup.find_all('div', class_='top-event-block border-block mb-3')
         
         events = []
+        seen_titles = set()  # Множество для отслеживания уникальных заголовков
         
         for block in sides_blocks:
             # Внутри блока ищем ссылку
@@ -36,6 +39,10 @@ def parse_events(url):
                 
                 # Извлекаем title
                 title = link.get('title', '')
+
+                if title in seen_titles:
+                    continue  # Пропускаем дубликат
+                seen_titles.add(title)  # Добавляем title в множество
                 
                 # Извлекаем названия команд
                 spans = link.find_all('span')
@@ -52,13 +59,17 @@ def parse_events(url):
                 # Формируем полный URL
                 full_url = urljoin(url, href)
                 
+                # Добавляем дату и время события
+                event_datetime = extract_datetime_from_title(title)
+                
                 events.append({
                     'match_name': match_name,
                     'title': title,
                     'url': full_url,
                     'relative_url': href,
                     'team1': teams[0] if len(teams) > 0 else '',
-                    'team2': teams[1] if len(teams) > 1 else ''
+                    'team2': teams[1] if len(teams) > 1 else '',
+                    'event_datetime': event_datetime  # Добавляем datetime события
                 })
             
         return events
@@ -73,12 +84,17 @@ def parse_events(url):
 
 def extract_datetime_from_title(title):
     """Извлекает дату и время из строки title"""
-    # Ищем паттерн "день месяц время" в строке title
-    pattern = r'(\d{1,2}\s+[а-яё]+)\s+(\d{1,2}:\d{2})'
-    match = re.search(pattern, title.lower())
     
-    if match:
-        date_str, time_str = match.groups()
+    # Нормализуем строку
+    title_lower = title.lower().replace('ё', 'е').strip()
+    
+    # Попробуем найти формат "день месяц время" (например: "3 января 15:30")
+    pattern1 = r'(\d{1,2})\s+([а-я]+)\s+(\d{1,2}:\d{2})'
+    match1 = re.search(pattern1, title_lower)
+    
+    if match1:
+        day_str, month_name, time_str = match1.groups()
+        day = int(day_str)
         
         # Словарь для преобразования русских названий месяцев
         months = {
@@ -87,66 +103,172 @@ def extract_datetime_from_title(title):
             'сентября': 9, 'октября': 10, 'ноября': 11, 'декабря': 12
         }
         
-        # Парсим день и месяц
-        day = int(date_str.split()[0])
-        month_name = date_str.split()[1]
-        month = months.get(month_name.lower())
+        month = months.get(month_name)
         
         if month:
-            # Создаем объект datetime (год берем текущий)
-            current_year = datetime.now().year
-            time_obj = datetime.strptime(time_str, '%H:%M')
+            # Нормализуем время
+            if ':' in time_str:
+                hours, minutes = time_str.split(':')
+                time_str = f"{int(hours):02d}:{int(minutes):02d}"
             
-            return datetime(current_year, month, day, 
-                           time_obj.hour, time_obj.minute)
+            current_year = datetime.now().year
+            current_month = datetime.now().month
+            
+            # Определяем год
+            year = current_year
+            if month < current_month or (month == current_month and day < datetime.now().day):
+                year = current_year + 1
+            
+            try:
+                time_obj = datetime.strptime(time_str, '%H:%M')
+                return datetime(year, month, day, time_obj.hour, time_obj.minute)
+            except ValueError:
+                return datetime(year, month, day, 0, 0)
     
-    # Если не удалось распарсить, возвращаем дату далекого прошлого
-    return datetime.min
+    # Попробуем найти формат "дд.мм.гггг" (например: "03.01.2026")
+    pattern2 = r'(\d{2})\.(\d{2})\.(\d{4})'
+    match2 = re.search(pattern2, title)
+    
+    if match2:
+        day, month, year = map(int, match2.groups())
+        
+        # Попробуем найти время
+        time_pattern = r'(\d{1,2}:\d{2})'
+        time_match = re.search(time_pattern, title)
+        
+        if time_match:
+            time_str = time_match.group(1)
+            if ':' in time_str:
+                hours, minutes = time_str.split(':')
+                time_str = f"{int(hours):02d}:{int(minutes):02d}"
+            try:
+                time_obj = datetime.strptime(time_str, '%H:%M')
+                return datetime(year, month, day, time_obj.hour, time_obj.minute)
+            except ValueError:
+                return datetime(year, month, day, 0, 0)
+        else:
+            return datetime(year, month, day, 0, 0)
+    
+    # Если не удалось распарсить
+    return datetime.max
+
+
+def filter_events(events, min_hours_before=2):
+    """
+    Фильтрует события, исключая уже начавшиеся и те, до которых осталось менее min_hours_before часов
+    """
+    # Получаем текущее время в UTC+5 (Екатеринбург)
+    now1 = datetime.now(ZoneInfo('Asia/Yekaterinburg'))
+    now = now1.replace(tzinfo=None)
+    
+    print(f"Текущее время (UTC+5): {now.strftime('%Y-%m-%d %H:%M:%S')}")
+    print(f"Минимальное время до события: {min_hours_before} часов")
+
+    filtered_events = []
+    
+    for event in events:
+        event_datetime = event.get('event_datetime')
+        
+        # Пропускаем события без даты или с datetime.max
+        if not event_datetime or event_datetime == datetime.max:
+            continue
+            
+        # Вычисляем разницу во времени
+        time_difference = event_datetime - now
+        
+        # Проверяем условия
+        if time_difference.total_seconds() > 0:
+            hours_before = time_difference.total_seconds() / 3600
+            if hours_before >= min_hours_before:
+                # Добавляем информацию о времени до события
+                event['hours_until'] = round(hours_before, 1)
+                event['starts_in'] = str(time_difference).split('.')[0]
+                event['event_time'] = event_datetime.strftime('%Y-%m-%d %H:%M')
+                filtered_events.append(event)
+                print(f"✓ Сохраняем: {event.get('title')} - через {hours_before:.1f} часов")
+            else:
+                print(f"✗ Отфильтровано (менее {min_hours_before} часов): {event.get('title')} - через {hours_before:.1f} часов")
+        else:
+            print(f"✗ Отфильтровано (уже началось): {event.get('title')} - началось {abs(time_difference.total_seconds()/3600):.1f} часов назад")
+    
+    return filtered_events
 
 
 def save_to_json(events, filename='events.json'):
     """Сохраняет результаты в JSON файл, отсортированные по дате и времени"""
+    # Фильтруем события
+    filtered_events = filter_events(events, min_hours_before=2)
     
-    # Сортируем события по дате и времени из title
+    # Сортируем события по дате и времени
     sorted_events = sorted(
-        events, 
-        key=lambda x: extract_datetime_from_title(x.get('title', ''))
+        filtered_events, 
+        key=lambda x: x.get('event_datetime', datetime.min)
     )
     
+    # Создаем копию для JSON (преобразуем datetime в строки)
+    events_for_json = []
+    for event in sorted_events:
+        event_copy = event.copy()
+        if 'event_datetime' in event_copy:
+            event_copy['event_datetime'] = event_copy['event_datetime'].strftime('%Y-%m-%d %H:%M:%S')
+        events_for_json.append(event_copy)
+    
     with open(filename, 'w', encoding='utf-8') as f:
-        json.dump(sorted_events, f, ensure_ascii=False, indent=2)
+        json.dump(events_for_json, f, ensure_ascii=False, indent=2)
 
 
 def save_to_csv(events, filename='events.csv'):
     """Сохраняет результаты в CSV файл"""
-    import csv
+    # Фильтруем события (передаем исходные события)
+    filtered_events = filter_events(events, min_hours_before=2)
+    
+    # Сортируем события по дате и времени
+    sorted_events = sorted(
+        filtered_events, 
+        key=lambda x: x.get('event_datetime', datetime.min)
+    )
     
     with open(filename, 'w', newline='', encoding='utf-8') as f:
         writer = csv.writer(f)
-        writer.writerow(['Номер', 'Название события', 'Полная ссылка', 'Относительная ссылка'])
+        writer.writerow(['Номер', 'Дата и время', 'Название события', 'Команда 1', 'Команда 2', 
+                         'Полная ссылка', 'До начала (часов)', 'До начала'])
         
-        sorted_events = sorted(
-            events, 
-            key=lambda x: extract_datetime_from_title(x.get('title', ''))
-        )
-
         for i, event in enumerate(sorted_events, 1):
-            writer.writerow([i, event['title'], event['url'], event['relative_url']])
+            event_time = event.get('event_time', '')
+            writer.writerow([
+                i,
+                event_time,
+                event['title'],
+                event.get('team1', ''),
+                event.get('team2', ''),
+                event['url'],
+                event.get('hours_until', ''),
+                event.get('starts_in', '')
+            ])
+
 
 def main():
     url = "https://kushvsporte.ru/freeforcats"
     
     print(f"Парсим сайт: {url}")
+    print("=" * 50)
+    
     events = parse_events(url)
     
     if events:
         print(f"Найдено событий: {len(events)}")
         print("=" * 50)
         
+        # Выводим информацию о всех событиях для отладки
+        print("Все найденные события:")
         for i, event in enumerate(events, 1):
-            print(f"{i}. {event['title']}")
-            print(f"   Ссылка: {event['url']}")
-            print()
+            event_datetime = event.get('event_datetime')
+            if event_datetime and event_datetime != datetime.max:
+                time_str = event_datetime.strftime('%Y-%m-%d %H:%M')
+                print(f"{i}. {event['title']}")
+                print(f"   Время: {time_str}")
+                print(f"   Ссылка: {event['url']}")
+                print()
         
         # Сохраняем результаты
         save_to_json(events)
@@ -157,6 +279,7 @@ def main():
         print(f"  - events.csv")
     else:
         print("События не найдены")
+
 
 if __name__ == "__main__":
     main()
