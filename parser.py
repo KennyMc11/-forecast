@@ -153,12 +153,12 @@ def extract_datetime_from_title(title):
     return datetime.max
 
 
-def filter_events(events, min_hours_before=2):
+def filter_events(events, min_hours_before=1):
     """
     Фильтрует события, исключая уже начавшиеся и те, до которых осталось менее min_hours_before часов
     """
-    # Получаем текущее время в UTC+5 (Екатеринбург)
-    now1 = datetime.now(ZoneInfo('Asia/Yekaterinburg'))
+    # Получаем текущее время в Москва
+    now1 = datetime.now(ZoneInfo('Europe/Moscow'))
     now = now1.replace(tzinfo=None)
     
     print(f"Текущее время (UTC+5): {now.strftime('%Y-%m-%d %H:%M:%S')}")

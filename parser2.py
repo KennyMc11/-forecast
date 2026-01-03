@@ -51,6 +51,11 @@ class SportsParser:
             title_div = soup.select_one('.row.align-items-center.mb-3 h1')
             if title_div:
                 result['title'] = title_div.get_text(strip=True)
+
+            #Время начала
+            start_time = soup.select_one('.color888.time-title')
+            if start_time:
+                result['time'] = start_time.get_text(strip=True)
             
             # Картинки
             team_images = []

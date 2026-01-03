@@ -5,6 +5,10 @@ import time
 import threading
 from datetime import datetime
 import os
+from AI import SportPredictionAnalyzer
+import shutil
+
+
 
 # Токен бота
 TOKEN = 'YOUR_BOT_TOKEN'
@@ -12,26 +16,6 @@ bot = telebot.TeleBot(TOKEN)
 
 # ID канала (с @ или без)
 CHANNEL_ID = '@your_channel_username'  # или '-1001234567890' для приватных каналов
-
-# Пример JSON данных (в реальном проекте эти данные будут загружаться из файлов или БД)
-sample_data = {
-    "краткая_аналитика": "Металлург Магнитогорск является явным фаворитом, учитывая текущую форму, турнирное положение и историю личных встреч.",
-    "прогноз_ставки": "П2 в основное время",
-    "обоснование": "Металлург демонстрирует впечатляющую игру с девятью победами в последних одиннадцати матчах и мощным атакующим потенциалом, тогда как Шанхай Драгонс находится в кризисе, не зная побед в основное время уже семь матчей подряд.",
-    "рекомендуемый_коэффициент": "1.80",
-    "уровень_уверенности": "9/10",
-    "риски": "Основной риск заключается в возможной нестабильности Металлурга в основное время, так как в последних трёх играх они не могли одержать победу в основное время.",
-    "альтернативные_ставки": [
-        "П2 с форой (-1)",
-        "Тотал больше 5.5"
-    ],
-    "мотивация": "Сделайте ставку на победу Металлурга и увеличьте свой выигрыш с привлекательным коэффициентом!"
-}
-
-# Функция для загрузки данных (в реальном проекте будет загрузка из файлов) ДОБАВИТЬ ИИ
-def load_data(data_source):
-    """Загружает данные для поста"""
-    return data_source
 
 # Шаблоны постов
 def create_post_template(data, post_number):
@@ -52,7 +36,7 @@ def create_post_template(data, post_number):
     post += f"*Коэффициент:* {data['рекомендуемый_коэффициент']}\n"
     post += f"*Уверенность:* {data['уровень_уверенности']}\n\n"
     
-    post += "*Краткая аналитика:*\n"
+    post += "*Анализ:*\n"
     post += f"{data['краткая_аналитика']}\n\n"
     
     post += "*Обоснование прогноза:*\n"
@@ -70,7 +54,6 @@ def create_post_template(data, post_number):
     post += f"💪 *{data['мотивация']}*\n\n"
     
     post += "————————————\n"
-    post += "⚠️ *Важно:* Ставки на спорт связаны с риском. Ставьте только ту сумму, которую готовы потерять.\n"
     post += f"📅 *Время публикации:* {datetime.now().strftime('%H:%M %d.%m.%Y')}\n"
     post += "#прогноз #ставки #аналитика"
     
@@ -79,7 +62,27 @@ def create_post_template(data, post_number):
 # Функции для каждого поста
 def send_post_12_00():
     """Отправка поста в 12:00"""
-    data = load_data("post1")  # Можно заменить на загрузку конкретных данных
+    # Инициализация анализатора
+    analyzer = SportPredictionAnalyzer(api_key="F75pwTloHHL5ZcbrW95KWLIrpIR2wtJo")
+
+    # Создаем папку для использованных файлов, если она не существует
+    used_folder = "parsed_data/used"
+    os.makedirs(used_folder, exist_ok=True)
+
+    # Анализ одного файла
+    file_number = 1
+
+    # Ищем существующий файл
+    while not os.path.exists(f"parsed_data/result_{file_number}.json"):
+        file_number += 1
+        if file_number > 20:  # Защита от бесконечного цикла
+            print(f"[{datetime.now()}] Ошибка: не найден файл для поста 12:00")
+            return
+        
+    source_file = f"parsed_data/result_{file_number}.json"
+
+    result = analyzer.analyze_single_file(source_file)
+    data = result  # загрузка конкретных данных
     post_text = create_post_template(data, 1)
     
     try:
@@ -92,16 +95,45 @@ def send_post_12_00():
                 parse_mode='Markdown'
             )
         print(f"[{datetime.now()}] Пост 1 (12:00) отправлен в канал")
+
+        # Перемещаем использованный файл в папку used
+        filename = os.path.basename(source_file)
+        destination_file = os.path.join(used_folder, filename)
+        
+        shutil.move(source_file, destination_file)
+        print(f"[{datetime.now()}] Файл {filename} перемещен в папку used")
+
     except Exception as e:
         print(f"[{datetime.now()}] Ошибка отправки поста 1: {e}")
 
 def send_post_14_00():
     """Отправка поста в 14:00"""
-    data = load_data("post2")
+    # Инициализация анализатора
+    analyzer = SportPredictionAnalyzer(api_key="F75pwTloHHL5ZcbrW95KWLIrpIR2wtJo")
+
+    # Создаем папку для использованных файлов, если она не существует
+    used_folder = "parsed_data/used"
+    os.makedirs(used_folder, exist_ok=True)
+
+    # Анализ одного файла
+    file_number = 2
+
+    # Ищем существующий файл
+    while not os.path.exists(f"parsed_data/result_{file_number}.json"):
+        file_number += 1
+        if file_number > 20:  # Защита от бесконечного цикла
+            print(f"[{datetime.now()}] Ошибка: не найден файл для поста 14:00")
+            return
+        
+    source_file = f"parsed_data/result_{file_number}.json"
+
+    result = analyzer.analyze_single_file(source_file)
+    data = result  # загрузка конкретных данных
     post_text = create_post_template(data, 2)
     
     try:
-        with open('images/post2.jpg', 'rb') as photo:
+        # Отправка поста с картинкой
+        with open('images/post1.jpg', 'rb') as photo:
             bot.send_photo(
                 CHANNEL_ID, 
                 photo, 
@@ -109,16 +141,45 @@ def send_post_14_00():
                 parse_mode='Markdown'
             )
         print(f"[{datetime.now()}] Пост 2 (14:00) отправлен в канал")
+
+        # Перемещаем использованный файл в папку used
+        filename = os.path.basename(source_file)
+        destination_file = os.path.join(used_folder, filename)
+        
+        shutil.move(source_file, destination_file)
+        print(f"[{datetime.now()}] Файл {filename} перемещен в папку used")
+
     except Exception as e:
-        print(f"[{datetime.now()}] Ошибка отправки поста 2: {e}")
+        print(f"[{datetime.now()}] Ошибка отправки поста 1: {e}")
 
 def send_post_16_00():
     """Отправка поста в 16:00"""
-    data = load_data("post3")
+    # Инициализация анализатора
+    analyzer = SportPredictionAnalyzer(api_key="F75pwTloHHL5ZcbrW95KWLIrpIR2wtJo")
+
+    # Создаем папку для использованных файлов, если она не существует
+    used_folder = "parsed_data/used"
+    os.makedirs(used_folder, exist_ok=True)
+
+    # Анализ одного файла
+    file_number = 3
+
+    # Ищем существующий файл
+    while not os.path.exists(f"parsed_data/result_{file_number}.json"):
+        file_number += 1
+        if file_number > 20:  # Защита от бесконечного цикла
+            print(f"[{datetime.now()}] Ошибка: не найден файл для поста 16:00")
+            return
+        
+    source_file = f"parsed_data/result_{file_number}.json"
+
+    result = analyzer.analyze_single_file(source_file)
+    data = result  # загрузка конкретных данных
     post_text = create_post_template(data, 3)
     
     try:
-        with open('images/post3.jpg', 'rb') as photo:
+        # Отправка поста с картинкой
+        with open('images/post1.jpg', 'rb') as photo:
             bot.send_photo(
                 CHANNEL_ID, 
                 photo, 
@@ -126,16 +187,45 @@ def send_post_16_00():
                 parse_mode='Markdown'
             )
         print(f"[{datetime.now()}] Пост 3 (16:00) отправлен в канал")
+
+        # Перемещаем использованный файл в папку used
+        filename = os.path.basename(source_file)
+        destination_file = os.path.join(used_folder, filename)
+        
+        shutil.move(source_file, destination_file)
+        print(f"[{datetime.now()}] Файл {filename} перемещен в папку used")
+
     except Exception as e:
         print(f"[{datetime.now()}] Ошибка отправки поста 3: {e}")
 
 def send_post_18_00():
     """Отправка поста в 18:00"""
-    data = load_data("post4")
+    # Инициализация анализатора
+    analyzer = SportPredictionAnalyzer(api_key="F75pwTloHHL5ZcbrW95KWLIrpIR2wtJo")
+
+    # Создаем папку для использованных файлов, если она не существует
+    used_folder = "parsed_data/used"
+    os.makedirs(used_folder, exist_ok=True)
+
+    # Анализ одного файла
+    file_number = 4
+
+    # Ищем существующий файл
+    while not os.path.exists(f"parsed_data/result_{file_number}.json"):
+        file_number += 1
+        if file_number > 20:  # Защита от бесконечного цикла
+            print(f"[{datetime.now()}] Ошибка: не найден файл для поста 18:00")
+            return
+        
+    source_file = f"parsed_data/result_{file_number}.json"
+
+    result = analyzer.analyze_single_file(source_file)
+    data = result  # загрузка конкретных данных
     post_text = create_post_template(data, 4)
     
     try:
-        with open('images/post4.jpg', 'rb') as photo:
+        # Отправка поста с картинкой
+        with open('images/post1.jpg', 'rb') as photo:
             bot.send_photo(
                 CHANNEL_ID, 
                 photo, 
@@ -143,16 +233,45 @@ def send_post_18_00():
                 parse_mode='Markdown'
             )
         print(f"[{datetime.now()}] Пост 4 (18:00) отправлен в канал")
+
+        # Перемещаем использованный файл в папку used
+        filename = os.path.basename(source_file)
+        destination_file = os.path.join(used_folder, filename)
+        
+        shutil.move(source_file, destination_file)
+        print(f"[{datetime.now()}] Файл {filename} перемещен в папку used")
+
     except Exception as e:
         print(f"[{datetime.now()}] Ошибка отправки поста 4: {e}")
 
 def send_post_20_00():
     """Отправка поста в 20:00"""
-    data = load_data("post5")
+    # Инициализация анализатора
+    analyzer = SportPredictionAnalyzer(api_key="F75pwTloHHL5ZcbrW95KWLIrpIR2wtJo")
+
+    # Создаем папку для использованных файлов, если она не существует
+    used_folder = "parsed_data/used"
+    os.makedirs(used_folder, exist_ok=True)
+
+    # Анализ одного файла
+    file_number = 5
+
+    # Ищем существующий файл
+    while not os.path.exists(f"parsed_data/result_{file_number}.json"):
+        file_number += 1
+        if file_number > 20:  # Защита от бесконечного цикла
+            print(f"[{datetime.now()}] Ошибка: не найден файл для поста 20:00")
+            return
+        
+    source_file = f"parsed_data/result_{file_number}.json"
+
+    result = analyzer.analyze_single_file(source_file)
+    data = result  # загрузка конкретных данных
     post_text = create_post_template(data, 5)
     
     try:
-        with open('images/post5.jpg', 'rb') as photo:
+        # Отправка поста с картинкой
+        with open('images/post1.jpg', 'rb') as photo:
             bot.send_photo(
                 CHANNEL_ID, 
                 photo, 
@@ -160,16 +279,45 @@ def send_post_20_00():
                 parse_mode='Markdown'
             )
         print(f"[{datetime.now()}] Пост 5 (20:00) отправлен в канал")
+
+        # Перемещаем использованный файл в папку used
+        filename = os.path.basename(source_file)
+        destination_file = os.path.join(used_folder, filename)
+        
+        shutil.move(source_file, destination_file)
+        print(f"[{datetime.now()}] Файл {filename} перемещен в папку used")
+
     except Exception as e:
         print(f"[{datetime.now()}] Ошибка отправки поста 5: {e}")
 
 def send_post_22_00():
     """Отправка поста в 22:00"""
-    data = load_data("post6")
+    # Инициализация анализатора
+    analyzer = SportPredictionAnalyzer(api_key="F75pwTloHHL5ZcbrW95KWLIrpIR2wtJo")
+
+    # Создаем папку для использованных файлов, если она не существует
+    used_folder = "parsed_data/used"
+    os.makedirs(used_folder, exist_ok=True)
+
+    # Анализ одного файла
+    file_number = 6
+
+    # Ищем существующий файл
+    while not os.path.exists(f"parsed_data/result_{file_number}.json"):
+        file_number += 1
+        if file_number > 20:  # Защита от бесконечного цикла
+            print(f"[{datetime.now()}] Ошибка: не найден файл для поста 22:00")
+            return
+        
+    source_file = f"parsed_data/result_{file_number}.json"
+
+    result = analyzer.analyze_single_file(source_file)
+    data = result  # загрузка конкретных данных
     post_text = create_post_template(data, 6)
     
     try:
-        with open('images/post6.jpg', 'rb') as photo:
+        # Отправка поста с картинкой
+        with open('images/post1.jpg', 'rb') as photo:
             bot.send_photo(
                 CHANNEL_ID, 
                 photo, 
@@ -177,6 +325,14 @@ def send_post_22_00():
                 parse_mode='Markdown'
             )
         print(f"[{datetime.now()}] Пост 6 (22:00) отправлен в канал")
+
+        # Перемещаем использованный файл в папку used
+        filename = os.path.basename(source_file)
+        destination_file = os.path.join(used_folder, filename)
+        
+        shutil.move(source_file, destination_file)
+        print(f"[{datetime.now()}] Файл {filename} перемещен в папку used")
+
     except Exception as e:
         print(f"[{datetime.now()}] Ошибка отправки поста 6: {e}")
 

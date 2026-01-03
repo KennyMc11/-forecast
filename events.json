@@ -1,53 +1,5 @@
 [
   {
-    "match_name": "Шанхай Драгонс - Металлург Магнитогорск",
-    "title": "Прогнозы на матч Шанхай Драгонс - Металлург Магнитогорск 03 января 17:00",
-    "url": "https://kushvsporte.ru/event/6348685-shanhay-dragons-metallurg-magnitogorsk",
-    "relative_url": "/event/6348685-shanhay-dragons-metallurg-magnitogorsk",
-    "team1": "Шанхай Драгонс",
-    "team2": "Металлург Магнитогорск",
-    "event_datetime": "2026-01-03 17:00:00",
-    "hours_until": 2.8,
-    "starts_in": "2:48:50",
-    "event_time": "2026-01-03 17:00"
-  },
-  {
-    "match_name": "Северсталь - Лада",
-    "title": "Прогнозы на матч Северсталь - Лада 03 января 17:00",
-    "url": "https://kushvsporte.ru/event/6348687-severstal-lada",
-    "relative_url": "/event/6348687-severstal-lada",
-    "team1": "Северсталь",
-    "team2": "Лада",
-    "event_datetime": "2026-01-03 17:00:00",
-    "hours_until": 2.8,
-    "starts_in": "2:48:50",
-    "event_time": "2026-01-03 17:00"
-  },
-  {
-    "match_name": "Сочи - Нефтехимик",
-    "title": "Прогнозы на матч Сочи - Нефтехимик 03 января 17:00",
-    "url": "https://kushvsporte.ru/event/6348686-sochi-neftehimik",
-    "relative_url": "/event/6348686-sochi-neftehimik",
-    "team1": "Сочи",
-    "team2": "Нефтехимик",
-    "event_datetime": "2026-01-03 17:00:00",
-    "hours_until": 2.8,
-    "starts_in": "2:48:50",
-    "event_time": "2026-01-03 17:00"
-  },
-  {
-    "match_name": "Вулверхэмптон - Вест Хэм Юнайтед",
-    "title": "Прогнозы на матч Вулверхэмптон - Вест Хэм Юнайтед 03 января 18:00",
-    "url": "https://kushvsporte.ru/event/6348779-vulverhempton-vest-hem-yunayted",
-    "relative_url": "/event/6348779-vulverhempton-vest-hem-yunayted",
-    "team1": "Вулверхэмптон",
-    "team2": "Вест Хэм Юнайтед",
-    "event_datetime": "2026-01-03 18:00:00",
-    "hours_until": 3.8,
-    "starts_in": "3:48:50",
-    "event_time": "2026-01-03 18:00"
-  },
-  {
     "match_name": "Борнмут - Арсенал",
     "title": "Прогнозы на матч Борнмут - Арсенал 03 января 20:30",
     "url": "https://kushvsporte.ru/event/6349030-bornmut-arsenal",
@@ -55,8 +7,20 @@
     "team1": "Борнмут",
     "team2": "Арсенал",
     "event_datetime": "2026-01-03 20:30:00",
-    "hours_until": 6.3,
-    "starts_in": "6:18:50",
+    "hours_until": 3.5,
+    "starts_in": "3:27:49",
     "event_time": "2026-01-03 20:30"
+  },
+  {
+    "match_name": "Эспаньол - Барселона",
+    "title": "Прогнозы на матч Эспаньол - Барселона 03 января 23:00",
+    "url": "https://kushvsporte.ru/event/6349258-espanol-barselona",
+    "relative_url": "/event/6349258-espanol-barselona",
+    "team1": "Эспаньол",
+    "team2": "Барселона",
+    "event_datetime": "2026-01-03 23:00:00",
+    "hours_until": 6.0,
+    "starts_in": "5:57:49",
+    "event_time": "2026-01-03 23:00"
   }
 ]
