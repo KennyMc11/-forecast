@@ -197,7 +197,7 @@ def filter_events(events, min_hours_before=1):
 def save_to_json(events, filename='events.json'):
     """Сохраняет результаты в JSON файл, отсортированные по дате и времени"""
     # Фильтруем события
-    filtered_events = filter_events(events, min_hours_before=2)
+    filtered_events = filter_events(events, min_hours_before=1)
     
     # Сортируем события по дате и времени
     sorted_events = sorted(
@@ -220,7 +220,7 @@ def save_to_json(events, filename='events.json'):
 def save_to_csv(events, filename='events.csv'):
     """Сохраняет результаты в CSV файл"""
     # Фильтруем события (передаем исходные события)
-    filtered_events = filter_events(events, min_hours_before=2)
+    filtered_events = filter_events(events, min_hours_before=1)
     
     # Сортируем события по дате и времени
     sorted_events = sorted(

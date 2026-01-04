@@ -6,6 +6,7 @@ __pycache__
 
 parsed_data
 events.csv
+
 events.json
 
 .vscode
@@ -13,10 +14,12 @@ events.json
 
 TELEGRAM_SETUP.md
 db.sqlite3
+sports_data.db
 
 # Логи
 *.log
 logs/
+posting_log.json
 
 # Системные файлы
 .DS_Store
