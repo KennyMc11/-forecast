@@ -31,11 +31,12 @@ class ManualPostState:
 user_states = {}
 manual_post_data = {}
 
-# Создаем объект временной зоны для Москвы
 moscow_tz = pytz.timezone('Europe/Moscow')
-moscow_time_3 = datetime.now(moscow_tz)
-moscow_time = moscow_time_3.replace(tzinfo=None)
 
+def get_moscow_time():
+    """Возвращает текущее время в Москве как naive datetime"""
+    moscow_time = datetime.now(moscow_tz)
+    return moscow_time.replace(tzinfo=None)
 
 class TimeParser:
     """Класс для парсинга времени из текстовых строк"""
@@ -51,13 +52,12 @@ class TimeParser:
         - "14:30" (сегодняшнее время)
         - "15.01.2024 20:00"
         """
-        global moscow_time
 
         if not time_str:
             return None
             
         time_str = time_str.strip()
-        now = moscow_time
+        now = get_moscow_time()
         
         try:
             # Формат: "Сегодня 21:00"
@@ -108,14 +108,13 @@ class TimeParser:
         Returns:
             bool: True если матч еще не начался, False если прошел или не удалось определить
         """
-        global moscow_time
 
         match_time = TimeParser.parse_time_string(time_str)
         if not match_time:
             return False  # Не удалось определить время
         
         # Добавляем небольшой буфер (30 минут) на случай если матч только начался
-        return match_time > moscow_time - timedelta(minutes=30)
+        return match_time > get_moscow_time() - timedelta(minutes=30)
 
 
 class TelegramBotWithDB:
@@ -200,7 +199,6 @@ class TelegramBotWithDB:
         Returns:
             Optional[Dict]: Данные матча или None
         """
-        global moscow_time
 
         # Получаем отсортированные матчи
         sorted_matches = self.get_next_matches_sorted(limit=20)
@@ -211,10 +209,10 @@ class TelegramBotWithDB:
         # Преобразуем time_slot в datetime для сравнения
         try:
             slot_hour = int(time_slot.split(':')[0])
-            now = moscow_time
+            now = get_moscow_time()
             slot_time = datetime(now.year, now.month, now.day, slot_hour, 0)
         except:
-            slot_time = moscow_time
+            slot_time = get_moscow_time()
         
         # Ищем матч, время начала которого максимально близко к текущему слоту
         best_match = None
@@ -255,7 +253,6 @@ class TelegramBotWithDB:
     
     def create_post_template(self, data: Dict, post_number: int) -> str:
 
-        global moscow_time
         """Создает текст поста на основе данных и номера поста"""
         
         templates = {
@@ -280,7 +277,7 @@ class TelegramBotWithDB:
         post += f"▪️ *Уверенность:* {data.get('уровень_уверенности', 'N/A')}\n\n"
 
         # Анализ
-        post += "*АНАЛИТИКА:*\n"
+        post += "*АНАЛИЗ:*\n"
         post += f"{data.get('краткая_аналитика', '')}\n"
         
         # Обоснование
@@ -331,15 +328,16 @@ class TelegramBotWithDB:
         Returns:
             Tuple[bool, str]: (Успешно ли отправлен пост, Сообщение о результате)
         """
-        global moscow_time
+
+        current_time = get_moscow_time()
 
         if not self.analyzer:
             error_msg = "Ошибка: анализатор не инициализирован"
-            print(f"[{moscow_time}] {error_msg}")
+            print(f"[{current_time}] {error_msg}")
             return False, error_msg
         
         time_display = post_time if post_time else "вручную"
-        print(f"[{moscow_time}] Подготовка поста {post_number} для отправки {time_display}")
+        print(f"[{get_moscow_time()}] Подготовка поста {post_number} для отправки {time_display}")
         
         # Получаем матч
         if match_url:
@@ -353,7 +351,7 @@ class TelegramBotWithDB:
             
             if not match_data:
                 error_msg = f"Матч с URL {match_url} не найден в базе данных"
-                print(f"[{moscow_time}] {error_msg}")
+                print(f"[{get_moscow_time()}] {error_msg}")
                 return False, error_msg
         else:
             # Получаем матч для временного слота
@@ -361,15 +359,15 @@ class TelegramBotWithDB:
         
         if not match_data:
             error_msg = f"Не удалось найти подходящий матч для поста {post_number}"
-            print(f"[{moscow_time}] {error_msg}")
+            print(f"[{get_moscow_time()}] {error_msg}")
             return False, error_msg
         
         match_url = match_data.get('url')
         match_title = match_data.get('title', 'Без названия')
         match_start = match_data.get('start_time', 'Время не указано')
         
-        print(f"[{moscow_time}] Выбран матч: {match_title}")
-        print(f"[{moscow_time}] Начало матча: {match_start}")
+        print(f"[{get_moscow_time()}] Выбран матч: {match_title}")
+        print(f"[{get_moscow_time()}] Начало матча: {match_start}")
         
         try:
             # Анализируем матч (это также пометит его как использованный)
@@ -377,7 +375,7 @@ class TelegramBotWithDB:
             
             if "error" in analysis_result:
                 error_msg = f"Ошибка анализа матча: {analysis_result['error']}"
-                print(f"[{moscow_time}] {error_msg}")
+                print(f"[{get_moscow_time()}] {error_msg}")
                 return False, error_msg
             
             # Обновляем информацию о матче (если нужно)
@@ -389,10 +387,10 @@ class TelegramBotWithDB:
             # Отправляем пост
             try:
                 # Формируем имя файла с изображением
-                image_folder = "images"
+                image_folder = "team_images"
                 image_files = [
-                    f"{image_folder}/post{post_number}.jpg",
-                    f"{image_folder}/post{post_number}.png",
+                    f"{image_folder}/match_{post_number}_teams.jpg",
+                    f"{image_folder}/match_{post_number}_teams.png",
                     f"{image_folder}/post1.jpg",  # Фолбэк на первую картинку
                     f"{image_folder}/default.jpg"
                 ]
@@ -412,7 +410,7 @@ class TelegramBotWithDB:
                             parse_mode='Markdown'
                         )
                     success_msg = f"Пост {post_number} успешно отправлен с изображением"
-                    print(f"[{moscow_time}] {success_msg}")
+                    print(f"[{get_moscow_time()}] {success_msg}")
                 else:
                     # Если нет изображения, отправляем только текст
                     bot.send_message(
@@ -421,7 +419,7 @@ class TelegramBotWithDB:
                         parse_mode='Markdown'
                     )
                     success_msg = f"Пост {post_number} успешно отправлен без изображения"
-                    print(f"[{moscow_time}] {success_msg}")
+                    print(f"[{get_moscow_time()}] {success_msg}")
                 
                 # Логируем успешную отправку
                 self._log_post_success(post_number, match_url, match_title, manual=bool(post_time is None))
@@ -429,22 +427,22 @@ class TelegramBotWithDB:
                 
             except Exception as e:
                 error_msg = f"Ошибка отправки поста: {e}"
-                print(f"[{moscow_time}] {error_msg}")
+                print(f"[{get_moscow_time()}] {error_msg}")
                 return False, error_msg
                 
         except Exception as e:
             error_msg = f"Общая ошибка при обработке поста: {e}"
-            print(f"[{moscow_time}] {error_msg}")
+            print(f"[{get_moscow_time()}] {error_msg}")
             return False, error_msg
     
     def _log_post_success(self, post_number: int, match_url: str, match_title: str, manual: bool = False):
         """Логирование успешной отправки поста"""
-        global moscow_time
+        current_time = get_moscow_time()
         log_entry = {
             'post_number': post_number,
             'match_url': match_url,
             'match_title': match_title,
-            'timestamp': moscow_time.isoformat(),
+            'timestamp': current_time.isoformat(),
             'channel': CHANNEL_ID,
             'manual': manual
         }
@@ -465,7 +463,7 @@ class TelegramBotWithDB:
         with open(log_file, 'w', encoding='utf-8') as f:
             json.dump(logs, f, ensure_ascii=False, indent=2)
         
-        print(f"[{moscow_time}] Логирование завершено для поста {post_number}")
+        print(f"[{get_moscow_time()}] Логирование завершено для поста {post_number}")
     
     def get_scheduled_stats(self):
         """Получение статистики по запланированным постам"""
@@ -545,7 +543,6 @@ def start_manual_post(message):
 
 @bot.message_handler(commands=['stats'])
 def show_stats(message):
-    global moscow_time
     """Показать статистику базы данных"""
     if not is_admin(message.from_user.id):
         bot.reply_to(message, "⛔ У вас нет прав для просмотра статистики.")
@@ -567,10 +564,36 @@ def show_stats(message):
     # Получаем следующую запланированную задачу
     next_run = schedule.next_run()
     if next_run:
-        time_until = next_run - moscow_time
-        mins = int(time_until.total_seconds() // 60)
-        secs = int(time_until.total_seconds() % 60)
-        stats_text += f"Через: {mins:02d}:{secs:02d}"
+        # Получаем текущее время в московском часовом поясе
+        current_moscow = datetime.now(moscow_tz)
+        
+        # Конвертируем время следующего запуска в московское время
+        # schedule использует локальное время сервера
+        if next_run.tzinfo is None:
+            # Если время без часового пояса, считаем что это локальное время сервера
+            # Добавляем часовой пояс сервера
+            try:
+                import tzlocal
+                server_tz = tzlocal.get_localzone()
+                next_run_local = server_tz.localize(next_run)
+                next_run_moscow = next_run_local.astimezone(moscow_tz)
+            except:
+                # Если не удалось определить часовой пояс сервера, предполагаем UTC
+                next_run_local = pytz.UTC.localize(next_run)
+                next_run_moscow = next_run_local.astimezone(moscow_tz)
+        else:
+            next_run_moscow = next_run.astimezone(moscow_tz)
+        
+        # Вычисляем разницу
+        time_until = next_run_moscow - current_moscow
+        
+        if time_until.total_seconds() > 0:
+            mins = int(time_until.total_seconds() // 60)
+            secs = int(time_until.total_seconds() % 60)
+            stats_text += f"Через: {mins:02d}:{secs:02d}"
+        else:
+            # Если время уже прошло, показываем когда следующий пост
+            stats_text += f"\r⏰ Ожидание следующего поста по расписанию"
     else:
         stats_text += "Нет запланированных публикаций"
     
@@ -891,14 +914,40 @@ def create_post_functions(bot_instance):
 
 # Настройка расписания
 def setup_schedule(post_functions):
-    """Настраивает расписание отправки постов"""
-    for time_str, func in post_functions:
-        schedule.every().day.at(time_str).do(func)
+    """Настраивает расписание отправки постов с учетом разницы часовых поясов"""
+    print("Настройка расписания...")
     
-    print("Расписание настроено:")
-    for time_str, _ in post_functions:
-        print(f"{time_str} - Пост")
-
+    # Определяем разницу между временем сервера и московским временем
+    server_time = datetime.now()
+    moscow_time = get_moscow_time()
+    
+    # Вычисляем разницу в часах
+    time_diff = moscow_time - server_time
+    hours_diff = time_diff.total_seconds() / 3600
+    
+    print(f"Разница между временем сервера и московским: {hours_diff:.1f} часов")
+    
+    # Если сервер в UTC (разница +3 часа), корректируем время
+    adjusted_times = {}
+    for time_str, func in post_functions:
+        hour, minute = map(int, time_str.split(':'))
+        
+        if abs(hours_diff) > 0.5:  # Если разница больше 30 минут
+            # Корректируем время для schedule
+            adjusted_hour = hour - int(hours_diff)
+            if adjusted_hour < 0:
+                adjusted_hour += 24
+            elif adjusted_hour >= 24:
+                adjusted_hour -= 24
+            adjusted_time = f"{adjusted_hour:02d}:{minute:02d}"
+        else:
+            adjusted_time = time_str
+        
+        schedule.every().day.at(adjusted_time).do(func)
+        adjusted_times[time_str] = adjusted_time
+        print(f"  {time_str} MSK → {adjusted_time} (время сервера)")
+    
+    return adjusted_times
 
 # Функция для запуска планировщика в отдельном потоке
 def run_scheduler():
@@ -912,7 +961,15 @@ def run_scheduler():
 def run_telegram_bot():
     """Запускает телеграм бота для обработки команд"""
     print("🤖 Запуск Telegram бота для ручного управления...")
-    bot.infinity_polling(timeout=60, long_polling_timeout=60)
+    
+    while True:
+        try:
+            print("Подключение к Telegram API...")
+            bot.infinity_polling(timeout=60, long_polling_timeout=60, interval=3)
+        except Exception as e:
+            print(f"Ошибка подключения к Telegram API: {e}")
+            print("Повторная попытка через 10 секунд...")
+            time.sleep(10)
 
 
 # Основной код
@@ -934,7 +991,7 @@ if __name__ == '__main__':
     post_functions = create_post_functions(bot_instance)
     
     # Настраиваем расписание
-    setup_schedule(post_functions)
+    adjusted_schedule = setup_schedule(post_functions)
     
     # Запуск планировщика в отдельном потоке
     scheduler_thread = threading.Thread(target=run_scheduler, daemon=True)
@@ -955,17 +1012,51 @@ if __name__ == '__main__':
     # Основной цикл для отображения статуса
     try:
         while True:
-            # Каждую минуту показываем следующую запланированную задачу
+            # Получаем время до следующего поста
             next_run = schedule.next_run()
+            
             if next_run:
-                time_until = next_run - moscow_time
-                mins = int(time_until.total_seconds() // 60)
-                secs = int(time_until.total_seconds() % 60)
+                # Вычисляем разницу в секундах
+                time_until = next_run - datetime.now()
                 
-                print(f"\r⏰ Следующий пост через: {mins:02d}:{secs:02d}", end="", flush=True)
+                if time_until.total_seconds() > 0:
+                    # ПРАВИЛЬНЫЙ расчет часов, минут, секунд
+                    total_seconds = int(time_until.total_seconds())
+                    hours = total_seconds // 3600
+                    minutes = (total_seconds % 3600) // 60
+                    seconds = total_seconds % 60
+                    
+                    # Определяем номер поста по часу
+                    hour = next_run.hour
+                    if hour == 7 or hour == 12:
+                        post_num = "1️⃣"
+                    elif hour == 9 or hour == 14:
+                        post_num = "2️⃣"
+                    elif hour == 11 or hour == 16:
+                        post_num = "3️⃣"
+                    elif hour == 13 or hour == 18:
+                        post_num = "4️⃣"
+                    elif hour == 15 or hour == 20:
+                        post_num = "5️⃣"
+                    elif hour == 17 or hour == 22:
+                        post_num = "6️⃣"
+                    else:
+                        post_num = "?"
+                    
+                    # Формируем строку времени
+                    if hours > 0:
+                        time_display = f"{hours:02d}:{minutes:02d}:{seconds:02d}"
+                    else:
+                        time_display = f"{minutes:02d}:{seconds:02d}"
+                    
+                    print(f"\r⏰ Пост {post_num} через: {time_display}", end="", flush=True)
+                else:
+                    print(f"\r⏰ Ожидание следующего поста", end="", flush=True)
+            else:
+                print(f"\r⏰ Нет запланированных постов", end="", flush=True)
             
             time.sleep(1)
-            
+                
     except KeyboardInterrupt:
         print("\n\n👋 Бот остановлен пользователем")
     

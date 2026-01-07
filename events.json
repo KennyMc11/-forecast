@@ -1,41 +1,5 @@
 [
   {
-    "match_name": "Шанхай Драгонс - Амур",
-    "title": "Прогнозы на матч Шанхай Драгонс - Амур 07 января 14:00",
-    "url": "https://kushvsporte.ru/event/6356010-shanhay-dragons-amur",
-    "relative_url": "/event/6356010-shanhay-dragons-amur",
-    "team1": "Шанхай Драгонс",
-    "team2": "Амур",
-    "event_datetime": "2026-01-07 14:00:00",
-    "hours_until": 6.2,
-    "starts_in": "6:12:00",
-    "event_time": "2026-01-07 14:00"
-  },
-  {
-    "match_name": "Сочи - Динамо Москва",
-    "title": "Прогнозы на матч Сочи - Динамо Москва 07 января 14:00",
-    "url": "https://kushvsporte.ru/event/6356011-sochi-dinamo-moskva",
-    "relative_url": "/event/6356011-sochi-dinamo-moskva",
-    "team1": "Сочи",
-    "team2": "Динамо Москва",
-    "event_datetime": "2026-01-07 14:00:00",
-    "hours_until": 6.2,
-    "starts_in": "6:12:00",
-    "event_time": "2026-01-07 14:00"
-  },
-  {
-    "match_name": "СКА - Лада",
-    "title": "Прогнозы на матч СКА - Лада 07 января 17:00",
-    "url": "https://kushvsporte.ru/event/6356353-ska-lada",
-    "relative_url": "/event/6356353-ska-lada",
-    "team1": "СКА",
-    "team2": "Лада",
-    "event_datetime": "2026-01-07 17:00:00",
-    "hours_until": 9.2,
-    "starts_in": "9:12:00",
-    "event_time": "2026-01-07 17:00"
-  },
-  {
     "match_name": "Наполи - Верона",
     "title": "Прогнозы на матч Наполи - Верона 07 января 20:30",
     "url": "https://kushvsporte.ru/event/6356659-napoli-verona",
@@ -43,8 +7,8 @@
     "team1": "Наполи",
     "team2": "Верона",
     "event_datetime": "2026-01-07 20:30:00",
-    "hours_until": 12.7,
-    "starts_in": "12:42:00",
+    "hours_until": 3.8,
+    "starts_in": "3:48:14",
     "event_time": "2026-01-07 20:30"
   },
   {
@@ -55,8 +19,8 @@
     "team1": "Барселона",
     "team2": "Атлетик Бильбао",
     "event_datetime": "2026-01-07 22:00:00",
-    "hours_until": 14.2,
-    "starts_in": "14:12:00",
+    "hours_until": 5.3,
+    "starts_in": "5:18:14",
     "event_time": "2026-01-07 22:00"
   },
   {
@@ -67,8 +31,8 @@
     "team1": "Манчестер Сити",
     "team2": "Брайтон энд Хав Альбион",
     "event_datetime": "2026-01-07 22:30:00",
-    "hours_until": 14.7,
-    "starts_in": "14:42:00",
+    "hours_until": 5.8,
+    "starts_in": "5:48:14",
     "event_time": "2026-01-07 22:30"
   },
   {
@@ -79,8 +43,44 @@
     "team1": "Фулхэм",
     "team2": "Челси",
     "event_datetime": "2026-01-07 22:30:00",
-    "hours_until": 14.7,
-    "starts_in": "14:42:00",
+    "hours_until": 5.8,
+    "starts_in": "5:48:14",
     "event_time": "2026-01-07 22:30"
+  },
+  {
+    "match_name": "Кристал Пэлэс - Астон Вилла",
+    "title": "Прогнозы на матч Кристал Пэлэс - Астон Вилла 07 января 22:30",
+    "url": "https://kushvsporte.ru/event/6356871-kristal-peles-aston-villa",
+    "relative_url": "/event/6356871-kristal-peles-aston-villa",
+    "team1": "Кристал Пэлэс",
+    "team2": "Астон Вилла",
+    "event_datetime": "2026-01-07 22:30:00",
+    "hours_until": 5.8,
+    "starts_in": "5:48:14",
+    "event_time": "2026-01-07 22:30"
+  },
+  {
+    "match_name": "Борнмут - Тоттенхэм Хотспур",
+    "title": "Прогнозы на матч Борнмут - Тоттенхэм Хотспур 07 января 22:30",
+    "url": "https://kushvsporte.ru/event/6356867-bornmut-tottenhem-hotspur",
+    "relative_url": "/event/6356867-bornmut-tottenhem-hotspur",
+    "team1": "Борнмут",
+    "team2": "Тоттенхэм Хотспур",
+    "event_datetime": "2026-01-07 22:30:00",
+    "hours_until": 5.8,
+    "starts_in": "5:48:14",
+    "event_time": "2026-01-07 22:30"
+  },
+  {
+    "match_name": "Парма - Интер",
+    "title": "Прогнозы на матч Парма - Интер 07 января 22:45",
+    "url": "https://kushvsporte.ru/event/6356959-parma-inter",
+    "relative_url": "/event/6356959-parma-inter",
+    "team1": "Парма",
+    "team2": "Интер",
+    "event_datetime": "2026-01-07 22:45:00",
+    "hours_until": 6.1,
+    "starts_in": "6:03:14",
+    "event_time": "2026-01-07 22:45"
   }
 ]

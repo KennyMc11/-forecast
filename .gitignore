@@ -3,6 +3,9 @@ venv/
 .pylintrc
 __pycache__
 
+images
+team_images
+
 
 parsed_data
 events.csv
