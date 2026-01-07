@@ -5,7 +5,13 @@ import os
 from urllib.parse import urljoin
 from datetime import datetime
 from database import SportsDatabase
+import pytz
 
+
+# Создаем объект временной зоны для Москвы
+moscow_tz = pytz.timezone('Europe/Moscow')
+moscow_time_3 = datetime.now(moscow_tz)
+moscow_time = moscow_time_3.replace(tzinfo=None)
 
 def parse_coefficients_precise(btn_element):
     """Точный парсинг коэффициентов из кнопки"""
@@ -35,6 +41,8 @@ class SportsParser:
     
     def parse_page(self, url, match_info=None):
         """Парсит одну страницу с точным извлечением коэффициентов"""
+        global moscow_time
+
         try:
             response = self.session.get(url)
             response.raise_for_status()
@@ -105,7 +113,7 @@ class SportsParser:
             result['has_full_text'] = bool(full_text.strip())
             
             result['url'] = url
-            result['parsed_at'] = datetime.now().isoformat()
+            result['parsed_at'] = moscow_time.isoformat()
             
             return result
             

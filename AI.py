@@ -2,7 +2,13 @@ import json
 from datetime import datetime
 from mistralai import Mistral
 from database import SportsDatabase  # Импортируем наш класс для работы с БД
+import pytz
 
+
+# Создаем объект временной зоны для Москвы
+moscow_tz = pytz.timezone('Europe/Moscow')
+moscow_time_3 = datetime.now(moscow_tz)
+moscow_time = moscow_time_3.replace(tzinfo=None)
 
 class SportPredictionAnalyzer:
     """Класс для анализа спортивных прогнозов с использованием AI"""
@@ -156,6 +162,8 @@ class SportPredictionAnalyzer:
         Returns:
             dict: Результат анализа
         """
+        global moscow_time
+
         # Извлечение данных
         title = match_data.get("title", "")
         start_time = match_data.get("start_time", "")
@@ -197,7 +205,7 @@ class SportPredictionAnalyzer:
         
         # Добавление метаданных
         result["meta"] = {
-            "analysis_date": datetime.now().isoformat(),
+            "analysis_date": moscow_time.isoformat(),
             "model_used": self.model,
             "parsed_at": match_data.get("parsed_at", "")
         }
@@ -230,7 +238,7 @@ class SportPredictionAnalyzer:
                     Проанализируй эту информацию и предоставь ответ в следующем JSON формате:
                     {{
                         "заголовок": "{title}",
-                        "Время начала": "{start_time} по Москве (НЕ МЕНЯТЬ)",
+                        "Время начала": "{start_time}(НЕ МЕНЯТЬ)",
                         "краткая_аналитика": "1-2 предложения с ключевыми факторами",
                         "прогноз_ставки": "конкретная ставка (например: 'П2 в основное время', 'Тотал больше 5.5' и тому подобные)",
                         "обоснование": "развернутое обоснование выбора (1-2 предложения)",
@@ -238,7 +246,7 @@ class SportPredictionAnalyzer:
                         "уровень_уверенности": "число от 1 до 10, где 10 - максимальная уверенность(напрример: '9/10')",
                         "риски": "основные риски для данной ставки(1 предложение)",
                         "альтернативные_ставки": ["альтернатива 1", "альтернатива 2"],
-                        "мотив": "текст стимулирующий перейти по ссылке ниже на сайт букмекера и сделать ставку(1 очень короткое, но очень емкое, продающее предложение)"
+                        "мотив": "текст стимулирующий перейти по ссылке на сайт букмекера и сделать ставку, не более 7 слов (например: Нет денег? Псотавь бонус!)"
                     }}
 
                     Будь объективным и основывай прогноз только на предоставленных данных."""

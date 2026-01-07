@@ -6,7 +6,13 @@ import re
 from datetime import datetime
 from zoneinfo import ZoneInfo
 import csv
+import pytz
 
+
+# Создаем объект временной зоны для Москвы
+moscow_tz = pytz.timezone('Europe/Moscow')
+moscow_time_3 = datetime.now(moscow_tz)
+moscow_time = moscow_time_3.replace(tzinfo=None)
 
 def parse_events(url):
     """
@@ -85,6 +91,8 @@ def parse_events(url):
 def extract_datetime_from_title(title):
     """Извлекает дату и время из строки title"""
     
+    global moscow_time
+
     # Нормализуем строку
     title_lower = title.lower().replace('ё', 'е').strip()
     
@@ -111,12 +119,12 @@ def extract_datetime_from_title(title):
                 hours, minutes = time_str.split(':')
                 time_str = f"{int(hours):02d}:{int(minutes):02d}"
             
-            current_year = datetime.now().year
-            current_month = datetime.now().month
+            current_year = moscow_time.year
+            current_month = moscow_time.month
             
             # Определяем год
             year = current_year
-            if month < current_month or (month == current_month and day < datetime.now().day):
+            if month < current_month or (month == current_month and day < moscow_time.day):
                 year = current_year + 1
             
             try:

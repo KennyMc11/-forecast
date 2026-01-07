@@ -1,7 +1,13 @@
 import sqlite3
 import json
-from datetime import datetime
+from datetime import datetime, timedelta
+import pytz
 
+
+# Создаем объект временной зоны для Москвы
+moscow_tz = pytz.timezone('Europe/Moscow')
+moscow_time_3 = datetime.now(moscow_tz)
+moscow_time = moscow_time_3.replace(tzinfo=None)
 
 class SportsDatabase:
     def __init__(self, db_path='sports_data.db'):
@@ -41,6 +47,7 @@ class SportsDatabase:
     
     def save_match(self, data):
         """Сохранение данных матча в базу данных"""
+        global moscow_time
         if not data:
             return False
         
@@ -48,20 +55,48 @@ class SportsDatabase:
         cursor = conn.cursor()
         
         try:
-            cursor.execute('''
-                INSERT OR REPLACE INTO matches 
-                (url, title, start_time, team_images, coefficients, full_text, parsed_at, has_full_text)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-            ''', (
-                data['url'],
-                data.get('title', ''),
-                data.get('start_time', ''),
-                json.dumps(data.get('team_images', [])),
-                json.dumps(data.get('coefficients', {})),
-                data.get('full_text', ''),
-                data.get('parsed_at', datetime.now().isoformat()),
-                data.get('has_full_text', False)
-            ))
+            # Сначала проверяем, существует ли уже запись
+            cursor.execute('SELECT used FROM matches WHERE url = ?', (data['url'],))
+            existing = cursor.fetchone()
+            
+            if existing:
+                # Если запись уже существует, обновляем данные, но сохраняем флаг used
+                cursor.execute('''
+                    UPDATE matches SET 
+                    title = ?, 
+                    start_time = ?, 
+                    team_images = ?, 
+                    coefficients = ?, 
+                    full_text = ?, 
+                    parsed_at = ?, 
+                    has_full_text = ?
+                    WHERE url = ?
+                ''', (
+                    data.get('title', ''),
+                    data.get('start_time', ''),
+                    json.dumps(data.get('team_images', [])),
+                    json.dumps(data.get('coefficients', {})),
+                    data.get('full_text', ''),
+                    data.get('parsed_at', moscow_time.isoformat()),
+                    data.get('has_full_text', False),
+                    data['url']
+                ))
+            else:
+                # Если записи нет, создаем новую с used = 0
+                cursor.execute('''
+                    INSERT INTO matches 
+                    (url, title, start_time, team_images, coefficients, full_text, parsed_at, has_full_text, used)
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, 0)
+                ''', (
+                    data['url'],
+                    data.get('title', ''),
+                    data.get('start_time', ''),
+                    json.dumps(data.get('team_images', [])),
+                    json.dumps(data.get('coefficients', {})),
+                    data.get('full_text', ''),
+                    data.get('parsed_at', moscow_time.isoformat()),
+                    data.get('has_full_text', False)
+                ))
             
             conn.commit()
             return True
@@ -214,6 +249,42 @@ class SportsDatabase:
         finally:
             conn.close()
     
+    def delete_past_events(self, days_old=1):
+        """
+        Удаление прошедших событий старше указанного количества дней
+        
+        Args:
+            days_old: количество дней (события старше этого срока будут удалены)
+        """
+        global moscow_time
+
+        conn = self.get_connection()
+        cursor = conn.cursor()
+        
+        try:
+            # Вычисляем дату, старше которой события считаются прошедшими
+            cutoff_date = (moscow_time - timedelta(days=days_old)).strftime('%Y-%m-%d')
+            
+            # Удаляем события, которые были спарсены раньше указанной даты
+            cursor.execute('''
+                DELETE FROM matches 
+                WHERE DATE(parsed_at) < DATE(?)
+            ''', (cutoff_date,))
+            
+            deleted_count = cursor.rowcount
+            conn.commit()
+            
+            print(f"Удалено прошедших событий: {deleted_count}")
+            return deleted_count
+            
+        except Exception as e:
+            print(f"Ошибка при удалении прошедших событий: {e}")
+            conn.rollback()
+            return 0
+        finally:
+            conn.close()
+
+
     def count_matches(self, used=None):
         """Подсчитать количество записей"""
         conn = self.get_connection()

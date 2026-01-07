@@ -9,6 +9,7 @@ from database import SportsDatabase
 from AI import SportPredictionAnalyzer
 from typing import Optional, List, Dict, Tuple
 import re
+import pytz
 
 # Токен бота
 TOKEN = '7580679285:AAHc6_XSg4G1hgyCpZ1kDb5z4njnj6ePY0c'
@@ -30,6 +31,11 @@ class ManualPostState:
 user_states = {}
 manual_post_data = {}
 
+# Создаем объект временной зоны для Москвы
+moscow_tz = pytz.timezone('Europe/Moscow')
+moscow_time_3 = datetime.now(moscow_tz)
+moscow_time = moscow_time_3.replace(tzinfo=None)
+
 
 class TimeParser:
     """Класс для парсинга времени из текстовых строк"""
@@ -45,11 +51,13 @@ class TimeParser:
         - "14:30" (сегодняшнее время)
         - "15.01.2024 20:00"
         """
+        global moscow_time
+
         if not time_str:
             return None
             
         time_str = time_str.strip()
-        now = datetime.now()
+        now = moscow_time
         
         try:
             # Формат: "Сегодня 21:00"
@@ -100,12 +108,14 @@ class TimeParser:
         Returns:
             bool: True если матч еще не начался, False если прошел или не удалось определить
         """
+        global moscow_time
+
         match_time = TimeParser.parse_time_string(time_str)
         if not match_time:
             return False  # Не удалось определить время
         
         # Добавляем небольшой буфер (30 минут) на случай если матч только начался
-        return match_time > datetime.now() - timedelta(minutes=30)
+        return match_time > moscow_time - timedelta(minutes=30)
 
 
 class TelegramBotWithDB:
@@ -190,6 +200,8 @@ class TelegramBotWithDB:
         Returns:
             Optional[Dict]: Данные матча или None
         """
+        global moscow_time
+
         # Получаем отсортированные матчи
         sorted_matches = self.get_next_matches_sorted(limit=20)
         
@@ -199,10 +211,10 @@ class TelegramBotWithDB:
         # Преобразуем time_slot в datetime для сравнения
         try:
             slot_hour = int(time_slot.split(':')[0])
-            now = datetime.now()
+            now = moscow_time
             slot_time = datetime(now.year, now.month, now.day, slot_hour, 0)
         except:
-            slot_time = datetime.now()
+            slot_time = moscow_time
         
         # Ищем матч, время начала которого максимально близко к текущему слоту
         best_match = None
@@ -242,6 +254,8 @@ class TelegramBotWithDB:
         pass
     
     def create_post_template(self, data: Dict, post_number: int) -> str:
+
+        global moscow_time
         """Создает текст поста на основе данных и номера поста"""
         
         templates = {
@@ -253,30 +267,30 @@ class TelegramBotWithDB:
             6: "🌙 *НОЧНОЙ МАТЧ* 🌙\n\n"
         }
         
-        post = templates.get(post_number, "📈 *ПРОГНОЗ ОТ ЭКСПЕРТА* 📈\n\n")
+        #post = templates.get(post_number, "📈 *ПРОГНОЗ ОТ ЭКСПЕРТА* 📈\n\n")
         
         # Добавляем информацию о матче
-        post += f"*{data.get('заголовок', 'Спортивный матч')}*\n"
-        post += f"*Начало:* {data.get('Время начала', 'Время не указано')}\n\n"
+        post = f"✅*{data.get('заголовок', 'Спортивный матч')}*\n"
+        post += f"*Начало:* {data.get('Время начала', 'Время не указано')} по Москве\n\n"
         
         # Прогноз
         post += "🎯 *ПРОГНОЗ НА МАТЧ:*\n"
         post += f"▪️ *Ставка:* {data.get('прогноз_ставки', 'Не определено')}\n"
         post += f"▪️ *Коэффициент:* {data.get('рекомендуемый_коэффициент', 'N/A')}\n"
         post += f"▪️ *Уверенность:* {data.get('уровень_уверенности', 'N/A')}\n\n"
-        
+
         # Анализ
-        post += "📊 *АНАЛИТИКА:*\n"
-        post += f"{data.get('краткая_аналитика', '')}\n\n"
+        post += "*АНАЛИТИКА:*\n"
+        post += f"{data.get('краткая_аналитика', '')}\n"
         
         # Обоснование
-        post += "🧠 *ОБОСНОВАНИЕ:*\n"
-        post += f"{data.get('обоснование', '')}\n\n"
+        post += "*ОБОСНОВАНИЕ:*\n"
+        post += f"{data.get('обоснование', '')}\n"
         
         # Риски
         risks = data.get('риски', '')
         if risks:
-            post += "⚠️ *РИСКИ:*\n"
+            post += f"*РИСКИ:*\n"
             post += f"{risks}\n\n"
         
         # Альтернативные ставки
@@ -287,22 +301,21 @@ class TelegramBotWithDB:
                 post += f"{i}. {alt}\n"
             post += "\n"
         
-        # Мотивация
-        motivation = data.get('мотив', 'Сделай правильный выбор и увеличивай свои шансы на победу!')
-        post += f"🚀 *{motivation}*\n\n"
-        
         # Футер
         post += "──────────────\n"
-        current_time = datetime.now().strftime('%H:%M %d.%m.%Y')
-        post += f"⏰ *Опубликовано:* {current_time}\n"
+
+        # Мотивация
+        motivation = data.get('мотив', 'Сделай правильный выбор и увеличивай свои шансы на победу!')
+        post += f"🚀 *{motivation}*\n\nПромокод *KENNY*\n\n*Актуальные ссылки:*\nССЫЛКА РФ\nССЫЛКА СНГ\n\n"
+
         
         # Хэштеги в зависимости от времени суток
         if post_number <= 2:
-            post += "#утро #прогноз #ставки"
+            post += "#аналитика #утро #прогноз #ставки"
         elif post_number <= 4:
-            post += "#день #анализ #ставки"
+            post += "#пргноз #день #анализ #ставки"
         else:
-            post += "#вечер #ночь #ставки"
+            post += "#прогноз #вечер #ночь #ставки"
         
         return post
     
@@ -318,13 +331,15 @@ class TelegramBotWithDB:
         Returns:
             Tuple[bool, str]: (Успешно ли отправлен пост, Сообщение о результате)
         """
+        global moscow_time
+
         if not self.analyzer:
             error_msg = "Ошибка: анализатор не инициализирован"
-            print(f"[{datetime.now()}] {error_msg}")
+            print(f"[{moscow_time}] {error_msg}")
             return False, error_msg
         
         time_display = post_time if post_time else "вручную"
-        print(f"[{datetime.now()}] Подготовка поста {post_number} для отправки {time_display}")
+        print(f"[{moscow_time}] Подготовка поста {post_number} для отправки {time_display}")
         
         # Получаем матч
         if match_url:
@@ -338,7 +353,7 @@ class TelegramBotWithDB:
             
             if not match_data:
                 error_msg = f"Матч с URL {match_url} не найден в базе данных"
-                print(f"[{datetime.now()}] {error_msg}")
+                print(f"[{moscow_time}] {error_msg}")
                 return False, error_msg
         else:
             # Получаем матч для временного слота
@@ -346,15 +361,15 @@ class TelegramBotWithDB:
         
         if not match_data:
             error_msg = f"Не удалось найти подходящий матч для поста {post_number}"
-            print(f"[{datetime.now()}] {error_msg}")
+            print(f"[{moscow_time}] {error_msg}")
             return False, error_msg
         
         match_url = match_data.get('url')
         match_title = match_data.get('title', 'Без названия')
         match_start = match_data.get('start_time', 'Время не указано')
         
-        print(f"[{datetime.now()}] Выбран матч: {match_title}")
-        print(f"[{datetime.now()}] Начало матча: {match_start}")
+        print(f"[{moscow_time}] Выбран матч: {match_title}")
+        print(f"[{moscow_time}] Начало матча: {match_start}")
         
         try:
             # Анализируем матч (это также пометит его как использованный)
@@ -362,7 +377,7 @@ class TelegramBotWithDB:
             
             if "error" in analysis_result:
                 error_msg = f"Ошибка анализа матча: {analysis_result['error']}"
-                print(f"[{datetime.now()}] {error_msg}")
+                print(f"[{moscow_time}] {error_msg}")
                 return False, error_msg
             
             # Обновляем информацию о матче (если нужно)
@@ -397,7 +412,7 @@ class TelegramBotWithDB:
                             parse_mode='Markdown'
                         )
                     success_msg = f"Пост {post_number} успешно отправлен с изображением"
-                    print(f"[{datetime.now()}] {success_msg}")
+                    print(f"[{moscow_time}] {success_msg}")
                 else:
                     # Если нет изображения, отправляем только текст
                     bot.send_message(
@@ -406,7 +421,7 @@ class TelegramBotWithDB:
                         parse_mode='Markdown'
                     )
                     success_msg = f"Пост {post_number} успешно отправлен без изображения"
-                    print(f"[{datetime.now()}] {success_msg}")
+                    print(f"[{moscow_time}] {success_msg}")
                 
                 # Логируем успешную отправку
                 self._log_post_success(post_number, match_url, match_title, manual=bool(post_time is None))
@@ -414,21 +429,22 @@ class TelegramBotWithDB:
                 
             except Exception as e:
                 error_msg = f"Ошибка отправки поста: {e}"
-                print(f"[{datetime.now()}] {error_msg}")
+                print(f"[{moscow_time}] {error_msg}")
                 return False, error_msg
                 
         except Exception as e:
             error_msg = f"Общая ошибка при обработке поста: {e}"
-            print(f"[{datetime.now()}] {error_msg}")
+            print(f"[{moscow_time}] {error_msg}")
             return False, error_msg
     
     def _log_post_success(self, post_number: int, match_url: str, match_title: str, manual: bool = False):
         """Логирование успешной отправки поста"""
+        global moscow_time
         log_entry = {
             'post_number': post_number,
             'match_url': match_url,
             'match_title': match_title,
-            'timestamp': datetime.now().isoformat(),
+            'timestamp': moscow_time.isoformat(),
             'channel': CHANNEL_ID,
             'manual': manual
         }
@@ -449,7 +465,7 @@ class TelegramBotWithDB:
         with open(log_file, 'w', encoding='utf-8') as f:
             json.dump(logs, f, ensure_ascii=False, indent=2)
         
-        print(f"[{datetime.now()}] Логирование завершено для поста {post_number}")
+        print(f"[{moscow_time}] Логирование завершено для поста {post_number}")
     
     def get_scheduled_stats(self):
         """Получение статистики по запланированным постам"""
@@ -529,6 +545,7 @@ def start_manual_post(message):
 
 @bot.message_handler(commands=['stats'])
 def show_stats(message):
+    global moscow_time
     """Показать статистику базы данных"""
     if not is_admin(message.from_user.id):
         bot.reply_to(message, "⛔ У вас нет прав для просмотра статистики.")
@@ -550,7 +567,7 @@ def show_stats(message):
     # Получаем следующую запланированную задачу
     next_run = schedule.next_run()
     if next_run:
-        time_until = next_run - datetime.now()
+        time_until = next_run - moscow_time
         mins = int(time_until.total_seconds() // 60)
         secs = int(time_until.total_seconds() % 60)
         stats_text += f"Через: {mins:02d}:{secs:02d}"
@@ -941,7 +958,7 @@ if __name__ == '__main__':
             # Каждую минуту показываем следующую запланированную задачу
             next_run = schedule.next_run()
             if next_run:
-                time_until = next_run - datetime.now()
+                time_until = next_run - moscow_time
                 mins = int(time_until.total_seconds() // 60)
                 secs = int(time_until.total_seconds() % 60)
                 
