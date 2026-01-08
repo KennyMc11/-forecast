@@ -179,12 +179,33 @@ class SportsParser:
         else:
             print(f"  ✗ Ошибка парсинга")
             return None
-
+        
+    def delete_old_events(self, days_old=1):
+        """
+        Удаление событий из БД и картинок, если они добавлены раньше чем сегодня
+        
+        Args:
+            days_old: количество дней (события старше этого срока будут удалены)
+                       По умолчанию 1 день (вчерашние и более старые события)
+        """
+        print(f"\n--- Удаление старых событий (старше {days_old} дня) ---")
+        
+        deleted_count = self.db.delete_past_events(days_old)
+        
+        if deleted_count > 0:
+            print(f"Удалено {deleted_count} событий, добавленных до сегодняшнего дня")
+        else:
+            print("Нет событий для удаления")
+        
+        return deleted_count
 
 # Пример использования
 if __name__ == "__main__":
     # Создаем парсер
     parser = SportsParser()
+
+    # УДАЛЯЕМ старые события перед парсингом новых
+    parser.delete_old_events(days_old=0)
     
     # Парсим страницы из JSON файла
     results = parser.process_urls_from_json('events.json')

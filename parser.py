@@ -255,7 +255,7 @@ def save_to_csv(events, filename='events.csv'):
             ])
 
 
-def main():
+def parser():
     url = "https://kushvsporte.ru/freeforcats"
     
     print(f"Парсим сайт: {url}")
@@ -290,4 +290,4 @@ def main():
 
 
 if __name__ == "__main__":
-    main()
+    parser()

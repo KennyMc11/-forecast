@@ -10,6 +10,8 @@ from AI import SportPredictionAnalyzer
 from typing import Optional, List, Dict, Tuple
 import re
 import pytz
+from parser import parser
+from parser2 import SportsParser
 
 # Токен бота
 TOKEN = '7580679285:AAHc6_XSg4G1hgyCpZ1kDb5z4njnj6ePY0c'
@@ -497,6 +499,8 @@ def send_welcome(message):
 /post - Ручная публикация поста
 /stats - Статистика базы данных
 /matches - Список доступных матчей
+/parser - Обновить ссылки событий на актуальные
+/parser2 - Обновить БД(удалить старые записи, записать новые)
 /cancel - Отмена текущей операции
 
 📅 *Расписание авто-публикации:*
@@ -644,6 +648,102 @@ def cancel_operation(message):
         "✅ Операция отменена.",
         reply_markup=remove_keyboard
     )
+
+@bot.message_handler(commands=['parser'])
+def cancel_operation(message):
+    """Парсинг главной"""
+    if not is_admin(message.from_user.id):
+        return
+    
+    user_id = message.from_user.id
+    if user_id in user_states:
+        del user_states[user_id]
+    
+    if user_id in manual_post_data:
+        del manual_post_data[user_id]
+    
+    parser()
+
+    bot.send_message(
+        message.chat.id,
+        "Ссылки событий обновлены"
+    )
+
+@bot.message_handler(commands=['parser2'])
+def cancel_operation(message):
+    """Парсинг ссылок"""
+    if not is_admin(message.from_user.id):
+        return
+    
+    user_id = message.from_user.id
+    if user_id in user_states:
+        del user_states[user_id]
+    
+    if user_id in manual_post_data:
+        del manual_post_data[user_id]
+    
+    # Отправляем сообщение о начале загрузки
+    loading_msg = bot.send_message(message.chat.id, "⏳ Начинается процесс парсинга... Пожалуйста, подождите.")
+    
+    try:
+        # Создаем парсер
+        parser = SportsParser()
+        
+        # Обновляем сообщение о статусе
+        bot.edit_message_text(
+            "🗑️ Удаление старых событий...",
+            message.chat.id,
+            loading_msg.message_id
+        )
+        
+        # УДАЛЯЕМ старые события перед парсингом новых
+        parser.delete_old_events(days_old=0)
+        
+        # Обновляем сообщение о статусе
+        bot.edit_message_text(
+            "🌐 Парсинг страниц из JSON файла...",
+            message.chat.id,
+            loading_msg.message_id
+        )
+        
+        # Парсим страницы из JSON файла
+        results = parser.process_urls_from_json('events.json')
+        
+        # Обновляем сообщение о статусе
+        bot.edit_message_text(
+            "📊 Получение статистики...",
+            message.chat.id,
+            loading_msg.message_id
+        )
+        
+        # Получить статистику
+        total = parser.db.count_matches()
+        used = parser.db.count_matches(used=True)
+        unused = parser.db.count_matches(used=False)
+
+        # Удаляем сообщение о загрузке и отправляем финальное сообщение
+        bot.delete_message(message.chat.id, loading_msg.message_id)
+        
+        bot.send_message(
+            message.chat.id,
+            f"✅ Парсинг завершен!\n"
+            f"Старые события удалены.\n"
+            f"БД и картинки обновлены\n\n"
+            f"📈 Статистика:\n"
+            f"• Всего событий: {total}\n"
+            f"• Использовано: {used}\n"
+            f"• Неиспользовано: {unused}"
+        )
+        
+    except Exception as e:
+        # В случае ошибки обновляем сообщение об ошибке
+        bot.edit_message_text(
+            f"❌ Произошла ошибка при парсинге:\n{str(e)}",
+            message.chat.id,
+            loading_msg.message_id
+        )
+        import traceback
+        traceback.print_exc()
 
 @bot.message_handler(func=lambda message: True)
 def handle_message(message):
