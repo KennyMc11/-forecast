@@ -388,22 +388,10 @@ class TelegramBotWithDB:
             
             # Отправляем пост
             try:
-                # Формируем имя файла с изображением
-                image_folder = "team_images"
-                image_files = [
-                    f"{image_folder}/match_{post_number}_teams.jpg",
-                    f"{image_folder}/match_{post_number}_teams.png",
-                    f"{image_folder}/post1.jpg",  # Фолбэк на первую картинку
-                    f"{image_folder}/default.jpg"
-                ]
+                # ВАЖНОЕ ИСПРАВЛЕНИЕ: Используем путь к изображению из БД
+                image_path = match_data.get('combined_image_path')
                 
-                image_path = None
-                for img_path in image_files:
-                    if os.path.exists(img_path):
-                        image_path = img_path
-                        break
-                
-                if image_path:
+                if image_path and os.path.exists(image_path):
                     with open(image_path, 'rb') as photo:
                         bot.send_photo(
                             CHANNEL_ID,
@@ -411,17 +399,41 @@ class TelegramBotWithDB:
                             caption=post_text,
                             parse_mode='Markdown'
                         )
-                    success_msg = f"Пост {post_number} успешно отправлен с изображением"
+                    success_msg = f"Пост {post_number} успешно отправлен с изображением команд"
                     print(f"[{get_moscow_time()}] {success_msg}")
                 else:
-                    # Если нет изображения, отправляем только текст
-                    bot.send_message(
-                        CHANNEL_ID,
-                        post_text,
-                        parse_mode='Markdown'
-                    )
-                    success_msg = f"Пост {post_number} успешно отправлен без изображения"
-                    print(f"[{get_moscow_time()}] {success_msg}")
+                    # Если нет изображения из БД, пробуем общие изображения
+                    image_folder = "team_images"
+                    image_files = [
+                        f"{image_folder}/post1.jpg",  # Фолбэк на первую картинку
+                        f"{image_folder}/default.jpg"
+                    ]
+                    
+                    found_image = None
+                    for img_path in image_files:
+                        if os.path.exists(img_path):
+                            found_image = img_path
+                            break
+                    
+                    if found_image:
+                        with open(found_image, 'rb') as photo:
+                            bot.send_photo(
+                                CHANNEL_ID,
+                                photo,
+                                caption=post_text,
+                                parse_mode='Markdown'
+                            )
+                        success_msg = f"Пост {post_number} успешно отправлен с общим изображением"
+                        print(f"[{get_moscow_time()}] {success_msg}")
+                    else:
+                        # Если нет изображения, отправляем только текст
+                        bot.send_message(
+                            CHANNEL_ID,
+                            post_text,
+                            parse_mode='Markdown'
+                        )
+                        success_msg = f"Пост {post_number} успешно отправлен без изображения"
+                        print(f"[{get_moscow_time()}] {success_msg}")
                 
                 # Логируем успешную отправку
                 self._log_post_success(post_number, match_url, match_title, manual=bool(post_time is None))

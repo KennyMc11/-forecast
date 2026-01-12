@@ -7,6 +7,7 @@ from datetime import datetime
 from zoneinfo import ZoneInfo
 import csv
 import pytz
+import os
 
 
 # Создаем объект временной зоны для Москвы
@@ -255,7 +256,29 @@ def save_to_csv(events, filename='events.csv'):
             ])
 
 
+def delete_file(file_path):
+    """
+    Удаляет файл по указанному пути
+    """
+    try:
+        os.remove(file_path)
+        print(f"Файл '{file_path}' успешно удален")
+        return True
+    except FileNotFoundError:
+        print(f"Ошибка: файл '{file_path}' не найден")
+        return False
+    except PermissionError:
+        print(f"Ошибка: нет прав на удаление файла '{file_path}'")
+        return False
+    except OSError as e:
+        print(f"Ошибка при удалении файла '{file_path}': {e}")
+        return False
+
+
 def parser():
+    delete_file("events.json")
+    delete_file("events.csv")
+
     url = "https://kushvsporte.ru/freeforcats"
     
     print(f"Парсим сайт: {url}")
