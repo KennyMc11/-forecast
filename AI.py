@@ -4,285 +4,108 @@ from mistralai import Mistral
 from database import SportsDatabase  # Импортируем наш класс для работы с БД
 import pytz
 
-
-# Создаем объект временной зоны для Москвы
-moscow_tz = pytz.timezone('Europe/Moscow')
-moscow_time_3 = datetime.now(moscow_tz)
-moscow_time = moscow_time_3.replace(tzinfo=None)
-
 class SportPredictionAnalyzer:
-    """Класс для анализа спортивных прогнозов с использованием AI"""
+    """Обновленный класс для анализа с фокусом на конверсию"""
     
     def __init__(self, api_key, db_path='sports_data.db'):
-        """
-        Инициализация анализатора
-        
-        Args:
-            api_key (str): API ключ для Mistral
-            db_path (str): Путь к базе данных SQLite
-        """
         self.client = Mistral(api_key=api_key)
         self.model = "mistral-medium"
         self.db = SportsDatabase(db_path)
+        self.moscow_tz = pytz.timezone('Europe/Moscow')
         
-    def analyze_unused_matches(self, limit=None):
-        """
-        Анализ всех неиспользованных матчей из базы данных
-        
-        Args:
-            limit (int, optional): Ограничение количества матчей для анализа
-        
-        Returns:
-            list: Список результатов анализа
-        """
-        # Получаем неиспользованные матчи из БД
-        unused_matches = self.db.get_unused_matches(limit=limit)
-        results = []
-        
-        print(f"Найдено {len(unused_matches)} неиспользованных матчей для анализа")
-        
-        for i, match_data in enumerate(unused_matches):
-            print(f"\nАнализирую матч {i+1}/{len(unused_matches)}:")
-            print(f"  Заголовок: {match_data.get('title', 'Без названия')}")
-            print(f"  URL: {match_data.get('url', '')}")
-            
-            try:
-                # Анализируем матч
-                result = self._analyze_match_data(match_data)
-                
-                # Добавляем URL матча для связи
-                result["match_url"] = match_data.get('url', '')
-                
-                # Помечаем матч как использованный
-                self.db.mark_as_used(match_data.get('url', ''))
-                
-                results.append(result)
-                
-                print(f"  ✓ Успешно проанализирован")
-                print(f"  Прогноз: {result.get('прогноз_ставки', 'Не определен')}")
-                print(f"  Уверенность: {result.get('уровень_уверенности', 'N/A')}")
-                
-            except Exception as e:
-                error_result = {
-                    "error": str(e),
-                    "match_url": match_data.get('url', ''),
-                    "title": match_data.get('title', '')
-                }
-                results.append(error_result)
-                print(f"  ✗ Ошибка анализа: {e}")
-        
-        return results
-    
+    def _get_current_moscow_time(self):
+        """Получает актуальное время в Москве в момент вызова"""
+        return datetime.now(self.moscow_tz).replace(tzinfo=None)
+
     def analyze_match_by_url(self, url):
-        """
-        Анализ конкретного матча по URL
-        
-        Args:
-            url (str): URL матча
-        
-        Returns:
-            dict: Результат анализа
-        """
-        # Получаем данные матча из БД
         match_data = self.db.get_match_by_url(url)
-        
         if not match_data:
-            return {"error": f"Матч с URL {url} не найден в базе данных"}
-        
-        print(f"Анализирую матч:")
-        print(f"  Заголовок: {match_data.get('title', 'Без названия')}")
+            return {"error": f"Матч не найден"}
         
         try:
             result = self._analyze_match_data(match_data)
             result["match_url"] = url
-            
-            # Помечаем как использованный
             self.db.mark_as_used(url)
-            
-            print(f"  ✓ Успешно проанализирован")
             return result
-            
         except Exception as e:
-            return {
-                "error": str(e),
-                "match_url": url,
-                "title": match_data.get('title', '')
-            }
-    
-    def analyze_all_matches(self, limit=None, mark_as_used=True):
-        """
-        Анализ всех матчей из базы данных
-        
-        Args:
-            limit (int, optional): Ограничение количества матчей
-            mark_as_used (bool): Помечать ли матчи как использованные после анализа
-        
-        Returns:
-            list: Список результатов анализа
-        """
-        # Получаем все матчи из БД
-        all_matches = self.db.get_all_matches(limit=limit)
-        results = []
-        
-        print(f"Анализирую {len(all_matches)} матчей из базы данных")
-        
-        for i, match_data in enumerate(all_matches):
-            print(f"\nМатч {i+1}/{len(all_matches)}:")
-            print(f"  Заголовок: {match_data.get('title', 'Без названия')}")
-            
-            try:
-                result = self._analyze_match_data(match_data)
-                result["match_url"] = match_data.get('url', '')
-                result["was_used"] = bool(match_data.get('used', 0))
-                
-                if mark_as_used:
-                    self.db.mark_as_used(match_data.get('url', ''))
-                
-                results.append(result)
-                print(f"  ✓ Успешно проанализирован")
-                
-            except Exception as e:
-                error_result = {
-                    "error": str(e),
-                    "match_url": match_data.get('url', ''),
-                    "title": match_data.get('title', '')
-                }
-                results.append(error_result)
-                print(f"  ✗ Ошибка: {e}")
-        
-        return results
-    
-    def _analyze_match_data(self, match_data):
-        """
-        Внутренний метод анализа данных матча
-        
-        Args:
-            match_data (dict): Данные матча из БД
-        
-        Returns:
-            dict: Результат анализа
-        """
-        global moscow_time
+            return {"error": str(e), "match_url": url}
 
-        # Извлечение данных
+    def _analyze_match_data(self, match_data):
+        # Берем время ПРЯМО СЕЙЧАС
+        current_time = self._get_current_moscow_time()
+
         title = match_data.get("title", "")
         start_time = match_data.get("start_time", "")
         full_text = match_data.get("full_text", "")
         
-        # Получаем коэффициенты из JSON строки
         coefficients_json = match_data.get("coefficients", "{}")
         try:
-            if isinstance(coefficients_json, str):
-                coefficients = json.loads(coefficients_json)
-            else:
-                coefficients = coefficients_json
+            coefficients = json.loads(coefficients_json) if isinstance(coefficients_json, str) else coefficients_json
         except:
             coefficients = {}
         
-        # Формирование промпта
         user_content = self._create_prompt(title, coefficients, full_text, start_time)
         
-        # Отправка запроса к AI
         response = self.client.chat.complete(
             model=self.model,
             messages=[
                 {
                     "role": "system", 
-                    "content": """Ты - профессиональный спортивный аналитик с 10-летним опытом в букмекерской сфере. 
-                    Анализируй предоставленные данные и давай обоснованные прогнозы. Отвечай так, чтобы вызывать доверие у пользователей, обращайся на Ты если это уместно.
-                    Отвечай ТОЛЬКО в формате JSON."""
+                    "content": """Ты - профессиональный каппер с жестким стилем. Твоя задача: проанализировать матч и выдать точный прогноз. 
+                    Твой текст должен мотивировать человека сделать ставку по твоей ссылке. 
+                    Пиши уверенно, используй термины разные термины каперов, типа: 'железо', 'банк'.
+                    Отвечай СТРОГО в формате JSON."""
                 },
                 {"role": "user", "content": user_content}
             ],
-            temperature=0.9,
+            temperature=0.8, # Немного снизил для стабильности прогнозов
             max_tokens=800,
-            response_format={"type": "json_object"}
-        )
+            response_format={"type": "json_object"})
         
-        # Парсинг ответа
         ai_response = response.choices[0].message.content
         result = json.loads(ai_response)
         
-        # Добавление метаданных
+        # Метаданные с правильной датой
         result["meta"] = {
-            "analysis_date": moscow_time.isoformat(),
-            "model_used": self.model,
-            "parsed_at": match_data.get("parsed_at", "")
+            "analysis_date": current_time.isoformat(),
+            "model_used": self.model
         }
         
         return result
     
     def _create_prompt(self, title, coefficients, full_text, start_time):
-        """
-        Создание промпта для AI
-        
-        Args:
-            title (str): Заголовок матча
-            coefficients (dict): Коэффициенты
-            full_text (str): Полный текст анализа
-            start_time (str): Время начала
-        
-        Returns:
-            str: Сформированный промпт
-        """
-        prompt = f"""На основе следующей информации о спортивном матче предоставь анализ и прогноз:
+        return f"""Анализ матча: {title}
+                    Начало: {start_time}
+                    Кэфы: {json.dumps(coefficients, ensure_ascii=False)}
+                    Данные: {full_text[:3000]} # Ограничил объем данных для экономии токенов
 
-                    ЗАГОЛОВОК: {title}
-
-                    КОЭФФИЦИЕНТЫ БУКМЕКЕРОВ:
-                    {json.dumps(coefficients, ensure_ascii=False, indent=2)}
-
-                    ПОЛНЫЙ АНАЛИЗ МАТЧА:
-                    {full_text}
-
-                    Проанализируй эту информацию и предоставь ответ в следующем JSON формате:
+                    Верни JSON:
                     {{
                         "заголовок": "{title}",
-                        "Время начала": "{start_time}(НЕ МЕНЯТЬ)",
-                        "краткая_аналитика": "1-2 предложения с ключевыми факторами",
-                        "прогноз_ставки": "конкретная ставка (например: 'П2 в основное время', 'Тотал больше 5.5' и тому подобные)",
-                        "обоснование": "развернутое обоснование выбора (1-2 предложения)",
-                        "рекомендуемый_коэффициент": "коэффициент, на который стоит делать ставку",
-                        "уровень_уверенности": "число от 1 до 10, где 10 - максимальная уверенность(напрример: '9/10')",
-                        "риски": "основные риски для данной ставки(1 предложение)",
-                        "альтернативные_ставки": ["альтернатива 1", "альтернатива 2"],
-                        "мотив": "текст стимулирующий перейти по ссылке на сайт букмекера и ввести промокод для получения бонуса, не более 7 слов (например: Нет денег? Псотавь бонус!)"
+                        "Время начала": "{start_time}",
+                        "краткая_аналитика": "2 четких предложения: почему эта ставка зайдет.",
+                        "прогноз_ставки": "конкретный исход (например: Тотал Больше 2.5)",
+                        "обоснование": "1 мощный аргумент.",
+                        "рекомендуемый_коэффициент": "число (например: 1.95)",
+                        "уровень_уверенности": "например: 9/10",
+                        "риски": "1 предложение, что может пойти не так",
+                        "альтернативные_ставки": ["исход 1", "исход 2"],
+                        "мотив": "Короткий призыв (до 7 слов) забрать бонус в закрепе или по ссылке."
                     }}
+                    """
 
-                    Будь объективным и основывай прогноз только на предоставленных данных."""
-        
-        return prompt
-    
-    def save_analysis_results(self, results, output_file="analysis_results.json"):
-        """
-        Сохранение результатов анализа в JSON файл
-        
-        Args:
-            results (list): Список результатов анализа
-            output_file (str): Имя выходного файла
-        """
-        with open(output_file, 'w', encoding='utf-8') as f:
-            json.dump(results, f, ensure_ascii=False, indent=2)
-        
-        print(f"\nРезультаты анализа сохранены в файл: {output_file}")
-    
     def get_statistics(self):
-        """
-        Получение статистики по базе данных
-        
-        Returns:
-            dict: Статистика
-        """
-        total = self.db.count_matches()
-        used = self.db.count_matches(used=True)
-        unused = self.db.count_matches(used=False)
-        
-        return {
-            "total_matches": total,
-            "used_matches": used,
-            "unused_matches": unused,
-            "usage_percentage": round((used / total * 100), 2) if total > 0 else 0
-        }
+        """Статистика для админ-панели"""
+        try:
+            total = self.db.count_matches()
+            unused = self.db.count_matches(used=False)
+            return {
+                "total": total,
+                "unused": unused,
+                "used": total - unused
+            }
+        except:
+            return {"total": 0, "unused": 0, "used": 0}
 
 
 # Пример использования класса

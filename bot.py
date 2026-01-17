@@ -254,67 +254,47 @@ class TelegramBotWithDB:
         pass
     
     def create_post_template(self, data: Dict, post_number: int) -> str:
-
-        """Создает текст поста на основе данных и номера поста"""
+        """Создает текст поста с маркетинговыми акцентами для конверсии"""
         
-        templates = {
-            1: "🎯 *УТРЕННИЙ ПРОГНОЗ* 🎯\n\n",
-            2: "📊 *ДНЕВНОЙ АНАЛИЗ* 📊\n\n",
-            3: "⚡ *ВЕЧЕРНИЙ ПРОГНОЗ* ⚡\n\n",
-            4: "🔮 *ОСНОВНОЙ ПРОГНОЗ* 🔮\n\n",
-            5: "💎 *ПРЕМИУМ ВЫБОР* 💎\n\n",
-            6: "🌙 *НОЧНОЙ МАТЧ* 🌙\n\n"
+        # Заголовки с акцентом на разное время
+        headers = {
+            1: "💰 *ОТЧЕТ И УТРЕННИЙ ВЫБОР*",
+            2: "📊 *ДНЕВНОЙ РАЗБОР ЛИНИИ*",
+            3: "🔥 *ГОРЯЧИЙ ПРОГНОЗ*",
+            4: "🏆 *ОСНОВНОЙ ВЫБОР ДНЯ (ЖЕЛЕЗО)*", # Самый важный пост
+            5: "🚀 *ВЕЧЕРНИЙ ЭКСПРЕСС*",
+            6: "🌙 *НОЧНАЯ СТАВКА (NBA/NHL)*"
         }
         
-        #post = templates.get(post_number, "📈 *ПРОГНОЗ ОТ ЭКСПЕРТА* 📈\n\n")
+        header = headers.get(post_number, "📈 *ПРОГНОЗ ОТ ЭКСПЕРТА*")
         
-        # Добавляем информацию о матче
-        post = f"✅*{data.get('заголовок', 'Спортивный матч')}*\n"
-        post += f"*Начало:* {data.get('Время начала', 'Время не указано')} по Москве\n\n"
+        post = f"{header}\n\n"
+        post += f"✅ *{data.get('заголовок', 'Спортивный матч')}*\n"
+        post += f"⏰ *Начало:* {data.get('Время начала', 'Скоро')} (МСК)\n\n"
         
-        # Прогноз
-        post += "🎯 *ПРОГНОЗ НА МАТЧ:*\n"
-        post += f"▪️ *Ставка:* {data.get('прогноз_ставки', 'Не определено')}\n"
-        post += f"▪️ *Коэффициент:* {data.get('рекомендуемый_коэффициент', 'N/A')}\n"
-        post += f"▪️ *Уверенность:* {data.get('уровень_уверенности', 'N/A')}\n\n"
+        post += "🎯 *МОЯ СТАВКА:*\n"
+        post += f"▪️ {data.get('прогноз_ставки', 'Анализируем...')}\n"
+        post += f"▪️ Коэффициент: `{data.get('рекомендуемый_коэффициент', 'N/A')}`\n"
+        post += f"▪️ Уверенность: {data.get('уровень_уверенности', '8/10')}\n\n"
 
-        # Анализ
-        post += "*АНАЛИЗ:*\n"
-        post += f"{data.get('краткая_аналитика', '')}\n"
+        post += "*КРАТКИЙ АНАЛИЗ:*\n"
+        post += f"{data.get('краткая_аналитика', '')[:200]}...\n\n"
         
-        # Обоснование
-        post += "*ОБОСНОВАНИЕ:*\n"
-        post += f"{data.get('обоснование', '')}\n"
-        
-        # Риски
-        risks = data.get('риски', '')
-        if risks:
-            post += f"*РИСКИ:*\n"
-            post += f"{risks}\n\n"
-        
-        # Альтернативные ставки
-        alt_bets = data.get('альтернативные_ставки', [])
-        if alt_bets and isinstance(alt_bets, list) and len(alt_bets) > 0:
-            post += "🔀 *АЛЬТЕРНАТИВЫ:*\n"
-            for i, alt in enumerate(alt_bets[:3], 1):
-                post += f"{i}. {alt}\n"
-            post += "\n"
-        
-        # Футер
-        post += "──────────────\n"
-
-        # Мотивация
-        motivation = data.get('мотив', 'Сделай правильный выбор и увеличивай свои шансы на победу!')
-        post += f"🚀 *{motivation}*\n\nПромокод *KENNY*\n\n*Актуальные ссылки:*\nССЫЛКА РФ\nССЫЛКА СНГ\n\n"
-
-        
-        # Хэштеги в зависимости от времени суток
-        if post_number <= 2:
-            post += "#аналитика #утро #прогноз #ставки"
-        elif post_number <= 4:
-            post += "#пргноз #день #анализ #ставки"
+        # Динамический призыв к действию (CTA)
+        if post_number == 4: # Главный пост дня
+            post += "❗️ *ВАЖНО:* Ставлю здесь основной банк. В БК по ссылке ниже дают +100% к депозиту. Идеально для этой ставки! 👇\n\n"
+        elif post_number == 1:
+            post += "Просыпаемся и начинаем день с плюса! Забирайте фрибет для старта ниже: 👇\n\n"
         else:
-            post += "#прогноз #вечер #ночь #ставки"
+            post += "Забирай бонус и ставь со мной: 👇\n\n"
+
+        # Блок ссылок и промокода
+        post += "🔗 *[СТАВИТЬ ТУТ (РФ)](ВАША_ССЫЛКА_1)*\n"
+        post += "🌍 *[СТАВИТЬ ТУТ (СНГ)](ВАША_ССЫЛКА_2)*\n"
+        post += f"🎁 Промокод на бонус: `{os.getenv('PROMO_CODE', 'KENNY')}`\n\n"
+        
+        post += "──────────────\n"
+        post += "#ставки #прогноз " + ( "#ночь" if post_number >= 5 else "#футбол")
         
         return post
     
@@ -502,9 +482,18 @@ def is_admin(user_id: int) -> bool:
 
 @bot.message_handler(commands=['start', 'help'])
 def send_welcome(message):
-    """Обработчик команды /start и /help"""
     if is_admin(message.from_user.id):
         help_text = """
+💰 *Панель Капера v2.0*
+
+📊 *Конверсионное расписание:*
+• 11:00 - Утренний профит
+• 14:30 - Дневной разбор
+• 17:45 - ВЕЧЕРНИЙ ПИК (Макс. трафик)
+• 19:15 - ГЛАВНЫЙ ПРОГНОЗ ДНЯ
+• 21:00 - Ночной дожим
+• 23:00 - NBA/NHL/Late Night
+
 👋 *Добро пожаловать в панель управления ботом!*
 
 📋 *Доступные команды:*
@@ -514,14 +503,6 @@ def send_welcome(message):
 /parser - Обновить ссылки событий на актуальные
 /parser2 - Обновить БД(удалить старые записи, записать новые)
 /cancel - Отмена текущей операции
-
-📅 *Расписание авто-публикации:*
-12:00 - Утренний прогноз
-14:00 - Дневной анализ
-16:00 - Вечерний прогноз
-18:00 - Основной прогноз
-20:00 - Премиум выбор
-22:00 - Ночной матч
         """
         bot.reply_to(message, help_text, parse_mode='Markdown')
     else:
@@ -547,12 +528,12 @@ def start_manual_post(message):
         message.chat.id,
         "📝 *Ручная публикация поста*\n\n"
         "Выберите тип поста (от 1 до 6):\n\n"
-        "1️⃣ - Утренний прогноз (12:00)\n"
-        "2️⃣ - Дневной анализ (14:00)\n"
-        "3️⃣ - Вечерний прогноз (16:00)\n"
-        "4️⃣ - Основной прогноз (18:00)\n"
-        "5️⃣ - Премиум выбор (20:00)\n"
-        "6️⃣ - Ночной матч (22:00)",
+        "1️⃣ - 11:00 - Утренний профит\n"
+        "2️⃣ - 14:30 - Дневной разбор\n"
+        "3️⃣ - 17:45 - ВЕЧЕРНИЙ ПИК (Макс. трафик)\n"
+        "4️⃣ - 19:15 - ГЛАВНЫЙ ПРОГНОЗ ДНЯ\n"
+        "5️⃣ - 21:00 - Ночной дожим\n"
+        "6️⃣ - 23:00 - NBA/NHL/Late Night",
         reply_markup=keyboard,
         parse_mode='Markdown'
     )
@@ -994,72 +975,44 @@ def handle_confirmation(message, text):
 
 # Функции для отправки постов по расписанию
 def create_post_functions(bot_instance):
-    """Создает функции для отправки постов по расписанию"""
-    
-    def send_post_12_00():
-        bot_instance.send_post(1, "12:00")
-    
-    def send_post_14_00():
-        bot_instance.send_post(2, "14:00")
-    
-    def send_post_16_00():
-        bot_instance.send_post(3, "16:00")
-    
-    def send_post_18_00():
-        bot_instance.send_post(4, "18:00")
-    
-    def send_post_20_00():
-        bot_instance.send_post(5, "20:00")
-    
-    def send_post_22_00():
-        bot_instance.send_post(6, "22:00")
+    """Создает функции для отправки постов по ГРАФИКУ МАКСИМАЛЬНОЙ КОНВЕРСИИ"""
     
     return [
-        ("12:00", send_post_12_00),
-        ("14:00", send_post_14_00),
-        ("16:00", send_post_16_00),
-        ("18:00", send_post_18_00),
-        ("20:00", send_post_20_00),
-        ("22:00", send_post_22_00)
+        ("11:00", lambda: bot_instance.send_post(1, "11:00")), # Утро: отчет и настрой
+        ("14:30", lambda: bot_instance.send_post(2, "14:30")), # День: первая активность
+        ("17:45", lambda: bot_instance.send_post(3, "17:45")), # Вечер: ПИК (люди едут домой)
+        ("19:15", lambda: bot_instance.send_post(4, "19:15")), # Прайм: Главный прогноз
+        ("21:00", lambda: bot_instance.send_post(5, "21:00")), # Лайв/Бонус: Дожим
+        ("23:00", lambda: bot_instance.send_post(6, "23:00"))  # Ночь: Американские лиги
     ]
+
 
 
 # Настройка расписания
 def setup_schedule(post_functions):
-    """Настраивает расписание отправки постов с учетом разницы часовых поясов"""
     print("Настройка расписания...")
     
-    # Определяем разницу между временем сервера и московским временем
-    server_time = datetime.now()
-    moscow_time = get_moscow_time()
+    # Разница между сервером и Москвой
+    server_now = datetime.now()
+    moscow_now = get_moscow_time()
+    diff = moscow_now - server_now
+    # Округляем до целых часов, так как разница обычно кратна часу
+    hours_diff = round(diff.total_seconds() / 3600)
     
-    # Вычисляем разницу в часах
-    time_diff = moscow_time - server_time
-    hours_diff = time_diff.total_seconds() / 3600
-    
-    print(f"Разница между временем сервера и московским: {hours_diff:.1f} часов")
-    
-    # Если сервер в UTC (разница +3 часа), корректируем время
-    adjusted_times = {}
-    for time_str, func in post_functions:
-        hour, minute = map(int, time_str.split(':'))
+    print(f"Разница времени: Сервер {server_now.strftime('%H:%M')} | Москва {moscow_now.strftime('%H:%M')}")
+    print(f"Поправка: {hours_diff} ч.")
+
+    for moscow_time_str, func in post_functions:
+        h, m = map(int, moscow_time_str.split(':'))
+        # Вычисляем, какое время должно быть на сервере, чтобы в Москве было h:m
+        server_h = (h - hours_diff) % 24
+        server_time_str = f"{server_h:02d}:{m:02d}"
         
-        if abs(hours_diff) > 0.5:  # Если разница больше 30 минут
-            # Корректируем время для schedule
-            adjusted_hour = hour - int(hours_diff)
-            if adjusted_hour < 0:
-                adjusted_hour += 24
-            elif adjusted_hour >= 24:
-                adjusted_hour -= 24
-            adjusted_time = f"{adjusted_hour:02d}:{minute:02d}"
-        else:
-            adjusted_time = time_str
-        
-        schedule.every().day.at(adjusted_time).do(func)
-        adjusted_times[time_str] = adjusted_time
-        print(f"  {time_str} MSK → {adjusted_time} (время сервера)")
+        schedule.every().day.at(server_time_str).do(func)
+        print(f"  ✅ План: {moscow_time_str} MSK (на сервере это {server_time_str})")
     
-    return adjusted_times
+    return hours_diff # Возвращаем разницу для корректного отображения в консоли
+
 
 # Функция для запуска планировщика в отдельном потоке
 def run_scheduler():
@@ -1101,76 +1054,45 @@ if __name__ == '__main__':
     
     # Создаем функции для постов
     post_functions = create_post_functions(bot_instance)
+    # Сохраняем разницу часов
+    h_diff = setup_schedule(post_functions)
     
-    # Настраиваем расписание
-    adjusted_schedule = setup_schedule(post_functions)
-    
-    # Запуск планировщика в отдельном потоке
-    scheduler_thread = threading.Thread(target=run_scheduler, daemon=True)
-    scheduler_thread.start()
-    
-    # Запуск телеграм бота в отдельном потоке
-    telegram_thread = threading.Thread(target=run_telegram_bot, daemon=True)
-    telegram_thread.start()
-    
-    print("\n🤖 Бот запущен и ожидает времени публикации...")
-    print("📱 Доступны команды для администратора:")
-    print("   /post - Ручная публикация поста")
-    print("   /stats - Статистика базы данных")
-    print("   /matches - Список доступных матчей")
-    print("   /cancel - Отмена текущей операции")
-    print("\nНажмите Ctrl+C для остановки\n")
-    
-    # Основной цикл для отображения статуса
+    # Запуск потоков...
+    threading.Thread(target=run_scheduler, daemon=True).start()
+    threading.Thread(target=run_telegram_bot, daemon=True).start()
+
     try:
         while True:
-            # Получаем время до следующего поста
             next_run = schedule.next_run()
-            
             if next_run:
-                # Вычисляем разницу в секундах
+                # Время до поста (оно одинаковое везде)
                 time_until = next_run - datetime.now()
                 
                 if time_until.total_seconds() > 0:
-                    # ПРАВИЛЬНЫЙ расчет часов, минут, секунд
-                    total_seconds = int(time_until.total_seconds())
-                    hours = total_seconds // 3600
-                    minutes = (total_seconds % 3600) // 60
-                    seconds = total_seconds % 60
+                    # Переводим время СЛЕДУЮЩЕГО запуска сервера в Московское для красоты в консоли
+                    next_run_ms = next_run + timedelta(hours=h_diff)
                     
-                    # Определяем номер поста по часу
-                    hour = next_run.hour
-                    if hour == 7 or hour == 12:
-                        post_num = "1️⃣"
-                    elif hour == 9 or hour == 14:
-                        post_num = "2️⃣"
-                    elif hour == 11 or hour == 16:
-                        post_num = "3️⃣"
-                    elif hour == 13 or hour == 18:
-                        post_num = "4️⃣"
-                    elif hour == 15 or hour == 20:
-                        post_num = "5️⃣"
-                    elif hour == 17 or hour == 22:
-                        post_num = "6️⃣"
-                    else:
-                        post_num = "?"
+                    total_sec = int(time_until.total_seconds())
+                    hours, remainder = divmod(total_sec, 3600)
+                    minutes, seconds = divmod(remainder, 60)
+
+                    # Определяем номер поста по Московскому времени старта
+                    target_h = next_run_ms.hour
+                    target_m = next_run_ms.minute
+                    time_key = f"{target_h:02d}:{target_m:02d}"
                     
-                    # Формируем строку времени
-                    if hours > 0:
-                        time_display = f"{hours:02d}:{minutes:02d}:{seconds:02d}"
-                    else:
-                        time_display = f"{minutes:02d}:{seconds:02d}"
-                    
-                    print(f"\r⏰ Пост {post_num} через: {time_display}", end="", flush=True)
+                    # Маппинг для иконок
+                    icons = {
+                        "11:00": "1️⃣", "14:30": "2️⃣", "17:45": "3️⃣",
+                        "19:15": "4️⃣", "21:00": "5️⃣", "23:00": "6️⃣"
+                    }
+                    post_icon = icons.get(time_key, "🎯")
+
+                    print(f"\r⏰ След. пост {post_icon} в {time_key} MSK | Через: {hours:02d}:{minutes:02d}:{seconds:02d}", end="", flush=True)
                 else:
-                    print(f"\r⏰ Ожидание следующего поста", end="", flush=True)
-            else:
-                print(f"\r⏰ Нет запланированных постов", end="", flush=True)
+                    print(f"\r⏰ Публикация в процессе...", end="", flush=True)
             
             time.sleep(1)
                 
     except KeyboardInterrupt:
-        print("\n\n👋 Бот остановлен пользователем")
-    
-    except Exception as e:
-        print(f"\n\n⚠️ Ошибка в работе бота: {e}")
+        print("\n👋 Бот остановлен")
