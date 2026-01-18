@@ -14,14 +14,14 @@ from parser import parser
 from parser2 import SportsParser
 
 # Токен бота
-TOKEN = '7580679285:AAHc6_XSg4G1hgyCpZ1kDb5z4njnj6ePY0c'
+TOKEN = '8427203763:AAHLbaFVVZa6oPKIH2RHidHUb1Dm_1NoYUg'
 bot = telebot.TeleBot(TOKEN)
 
 # ID канала (с @ или без)
-CHANNEL_ID = '@test_forecast'  # или '-1001234567890' для приватных каналов
+CHANNEL_ID = '@kenny_line'  # или '-1001234567890' для приватных каналов
 
 # ID администратора (замените на свой Telegram ID)
-ADMIN_ID = 409000348  # Здесь должен быть ваш Telegram ID
+ADMIN_ID = 7927016634  # Здесь должен быть ваш Telegram ID
 
 # Состояния для FSM (Finite State Machine) ручной публикации
 class ManualPostState:
