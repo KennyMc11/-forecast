@@ -277,8 +277,10 @@ class TelegramBotWithDB:
         post += f"▪️ Коэффициент: `{data.get('рекомендуемый_коэффициент', 'N/A')}`\n"
         post += f"▪️ Уверенность: {data.get('уровень_уверенности', '8/10')}\n\n"
 
-        post += "*КРАТКИЙ АНАЛИЗ:*\n"
-        post += f"{data.get('краткая_аналитика', '')[:200]}...\n\n"
+        post += "*АНАЛИЗ:*\n"
+        post += f"{data.get('краткая_аналитика', '')[:200]}...\n"
+        post += "*ОБОСНОВАНИЕ:*\n"
+        post += f"{data.get('обоснование', '')[:200]}...\n\n"
         
         # Динамический призыв к действию (CTA)
         if post_number == 4: # Главный пост дня
@@ -286,12 +288,12 @@ class TelegramBotWithDB:
         elif post_number == 1:
             post += "Просыпаемся и начинаем день с плюса! Забирайте фрибет для старта ниже: 👇\n\n"
         else:
-            post += "Забирай бонус и ставь со мной: 👇\n\n"
+            post += "Забирай бонус и ставь со мной: 👇\n"
 
         # Блок ссылок и промокода
-        post += "*[СТАВИТЬ ТУТ (РФ)](https://1wodrp.life/?open=register&p=qlc1)*\n"
-        post += "*[СТАВИТЬ ТУТ (СНГ)](https://1wfafs.life/?open=register&p=qwmk)*\n"
-        post += f"🎁 Промокод на бонус: KENNYLINE\n\n"
+        post += f"[АКТУАЛЬНАЯ ССЫЛКА (РФ)](https://1wodrp.life/?open=register&p=qlc1)\n"
+        post += f"[АКТУАЛЬНАЯ ССЫЛКА (Другие)](https://1wfafs.life/?open=register&p=qwmk)\n\n"
+        post += f"🎁 *Промокод* на бонус: `KENNYLINE`\n\n"
         
         post += "──────────────\n"
         post += "#ставки #прогноз " + ( "#ночь" if post_number >= 5 else "#аналитика")
@@ -365,6 +367,14 @@ class TelegramBotWithDB:
             
             # Создаем текст поста
             post_text = self.create_post_template(analysis_result, post_number)
+
+             # СОЗДАЕМ ОДНУ ИНЛАЙН-КНОПКУ С ССЫЛКОЙ
+            keyboard = telebot.types.InlineKeyboardMarkup()
+            url_button = telebot.types.InlineKeyboardButton(
+                text="Сделать ставку",  # Текст на кнопке
+                url="https://1wfafs.life/?open=register&p=qwmk"  # Ваша ссылка для СНГ
+            )
+            keyboard.add(url_button)  # Добавляем одну кнопку
             
             # Отправляем пост
             try:
@@ -377,7 +387,8 @@ class TelegramBotWithDB:
                             CHANNEL_ID,
                             photo,
                             caption=post_text,
-                            parse_mode='Markdown'
+                            parse_mode='Markdown',
+                            reply_markup=keyboard
                         )
                     success_msg = f"Пост {post_number} успешно отправлен с изображением команд"
                     print(f"[{get_moscow_time()}] {success_msg}")
@@ -401,7 +412,8 @@ class TelegramBotWithDB:
                                 CHANNEL_ID,
                                 photo,
                                 caption=post_text,
-                                parse_mode='Markdown'
+                                parse_mode='Markdown',
+                                reply_markup=keyboard
                             )
                         success_msg = f"Пост {post_number} успешно отправлен с общим изображением"
                         print(f"[{get_moscow_time()}] {success_msg}")
@@ -410,7 +422,8 @@ class TelegramBotWithDB:
                         bot.send_message(
                             CHANNEL_ID,
                             post_text,
-                            parse_mode='Markdown'
+                            parse_mode='Markdown',
+                            reply_markup=keyboard
                         )
                         success_msg = f"Пост {post_number} успешно отправлен без изображения"
                         print(f"[{get_moscow_time()}] {success_msg}")
