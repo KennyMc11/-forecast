@@ -180,7 +180,7 @@ class SportsParser:
             print(f"  ✗ Ошибка парсинга")
             return None
         
-    def delete_old_events(self, days_old=1):
+    def delete_old_events(self, days_old=0):
         """
         Удаление событий из БД и картинок, если они добавлены раньше чем сегодня
         
