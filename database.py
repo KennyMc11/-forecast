@@ -434,7 +434,7 @@ class SportsDatabase:
         finally:
             conn.close()
     
-    def delete_past_events(self, days_old=1):
+    def delete_past_events(self, days_old=0):
         """
         Удаление прошедших событий старше указанного количества дней
         

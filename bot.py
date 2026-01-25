@@ -489,6 +489,14 @@ class TelegramBotWithDB:
         }
         
         return stats
+    
+    def mark_match_used(self, url: str) -> bool:
+        """Пометить матч как использованный"""
+        return self.db.mark_as_used(url)
+
+    def mark_match_unused(self, url: str) -> bool:
+        """Пометить матч как неиспользованный"""
+        return self.db.mark_as_unused(url)
 
 
 # Инициализация бота
@@ -523,6 +531,7 @@ def send_welcome(message):
 /parser - Обновить ссылки событий на актуальные
 /parser2 - Обновить БД(удалить старые записи, записать новые)
 /cancel - Отмена текущей операции
+/delete <номер матча> - удалить матч из БД
         """
         bot.reply_to(message, help_text, parse_mode='Markdown')
     else:
@@ -663,7 +672,7 @@ def cancel_operation(message):
     )
 
 @bot.message_handler(commands=['parser'])
-def cancel_operation(message):
+def parser_operation(message):
     """Парсинг главной"""
     if not is_admin(message.from_user.id):
         return
@@ -683,7 +692,7 @@ def cancel_operation(message):
     )
 
 @bot.message_handler(commands=['parser2'])
-def cancel_operation(message):
+def parser2_operation(message):
     """Парсинг ссылок"""
     if not is_admin(message.from_user.id):
         return
@@ -758,6 +767,43 @@ def cancel_operation(message):
         import traceback
         traceback.print_exc()
 
+@bot.message_handler(commands=['delete'])
+def delete_match_by_number(message):
+    if not is_admin(message.from_user.id):
+        return
+
+    parts = message.text.split()
+    if len(parts) != 2:
+        bot.reply_to(message, "❌ Используй: /delete <номер матча>")
+        return
+
+    try:
+        index = int(parts[1])
+    except ValueError:
+        bot.reply_to(message, "❌ Номер матча должен быть числом")
+        return
+
+    matches = bot_instance.get_all_available_matches(limit=50)
+
+    if not (1 <= index <= len(matches)):
+        bot.reply_to(message, "❌ Матч с таким номером не найден")
+        return
+
+    match = matches[index - 1]
+    url = match.get('url')
+    title = match.get('title', 'Без названия')
+
+    success = bot_instance.db.delete_match(url)
+
+    if success:
+        bot.reply_to(
+            message,
+            f"🗑️ *Матч удалён:*\n{title}",
+            parse_mode='Markdown'
+        )
+    else:
+        bot.reply_to(message, "❌ Не удалось удалить матч")
+
 @bot.message_handler(func=lambda message: True)
 def handle_message(message):
     """Обработка текстовых сообщений (для FSM ручной публикации)"""
@@ -815,7 +861,7 @@ def handle_post_number_selection(message, text):
     user_states[user_id] = ManualPostState.WAITING_MATCH_SELECTION
     
     # Получаем доступные матчи
-    matches = bot_instance.get_all_available_matches(limit=10)
+    matches = bot_instance.get_all_available_matches(limit=15)
     
     if not matches:
         bot.send_message(
@@ -1005,8 +1051,6 @@ def create_post_functions(bot_instance):
         ("21:00", lambda: bot_instance.send_post(5, "21:00")), # Лайв/Бонус: Дожим
         ("23:00", lambda: bot_instance.send_post(6, "23:00"))  # Ночь: Американские лиги
     ]
-
-
 
 # Настройка расписания
 def setup_schedule(post_functions):
