@@ -532,6 +532,7 @@ def send_welcome(message):
 /parser2 - Обновить БД(удалить старые записи, записать новые)
 /cancel - Отмена текущей операции
 /delete <номер матча> - удалить матч из БД
+/cleardb - очстить БД
         """
         bot.reply_to(message, help_text, parse_mode='Markdown')
     else:
@@ -803,6 +804,28 @@ def delete_match_by_number(message):
         )
     else:
         bot.reply_to(message, "❌ Не удалось удалить матч")
+
+@bot.message_handler(commands=['cleardb'])
+def cleardb_operation(message):
+    """Очистка БД"""
+    if not is_admin(message.from_user.id):
+        return
+    
+    user_id = message.from_user.id
+    if user_id in user_states:
+        del user_states[user_id]
+    
+    if user_id in manual_post_data:
+        del manual_post_data[user_id]
+
+    parser = SportsParser()
+    days_old = 0
+    parser.delete_old_events(days_old=days_old)
+
+    bot.send_message(
+        message.chat.id,
+        f"Удалены все события старше {days_old} дней."
+    )
 
 @bot.message_handler(func=lambda message: True)
 def handle_message(message):
