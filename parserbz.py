@@ -15,7 +15,7 @@ moscow_tz = pytz.timezone('Europe/Moscow')
 moscow_time_3 = datetime.now(moscow_tz)
 moscow_time = moscow_time_3.replace(tzinfo=None)
 
-def parse_events(url):
+def parse_events(url, max_events=10):
     try:
         # Отправляем GET-запрос
         headers = {
@@ -35,6 +35,9 @@ def parse_events(url):
 
         for block in sides_blocks:
             link = block.find('a', class_='bets-description-card')
+
+            if len(events) >= max_events:
+                break
 
             if link:
                 # Извлекаем href
@@ -268,7 +271,7 @@ def parserbz():
     print(f"Парсим сайт: {url}")
     print("=" * 50)
     
-    events = parse_events(url)
+    events = parse_events(url, max_events=10)
     
     if events:
         print(f"Найдено событий: {len(events)}")
