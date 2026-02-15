@@ -14,6 +14,7 @@ from parser import parser
 from parser2 import SportsParser
 from parserbz import parserbz
 from parserbz2 import SportsParserBZ
+import gc
 
 
 # Токен бота
@@ -947,6 +948,8 @@ def deletedb_operation(message):
 
     db = SportsDatabase()
     db.clear_database()
+
+    gc.collect()
 
     bot.send_message(
         message.chat.id,
